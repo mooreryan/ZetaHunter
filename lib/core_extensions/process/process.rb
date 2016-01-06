@@ -5,8 +5,8 @@ module CoreExtensions
     def run_it *a, &b
       exit_status, stdout, stderr = systemu *a, &b
 
-      puts stdout.chomp
-      $stderr.puts stderr.chomp
+      puts stdout unless stdout.empty?
+      $stderr.puts stderr unless stderr.empty?
 
       exit_status.exitstatus
     end
