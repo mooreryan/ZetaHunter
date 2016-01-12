@@ -4,11 +4,21 @@ module CoreExtensions
       Object::Time.now.strftime fmt
     end
 
-    def time_it title
-      t = Object::Time.now
-      yield
+    def time_it title, logger=nil, do_block=true
+      if do_block
+        t = Object::Time.now
 
-      return "#{title} finished in #{Object::Time.now - t} seconds"
+        yield
+
+        msg = "#{title} finished in #{Object::Time.now - t} " +
+              "seconds"
+
+        if logger
+          logger.info msg
+        else
+          $stderr.puts msg
+        end
+      end
     end
   end
 end
