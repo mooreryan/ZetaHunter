@@ -1,3 +1,4 @@
-test_files
 assets/*
 bin
+formatdb.log
+test_files

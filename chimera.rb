@@ -1,11 +1,8 @@
 require_relative File.join "lib", "lib_helper.rb"
 
-def log_cmd logger, cmd
-  logger.debug { "Running: #{cmd}" }
-end
-
 include Const
 include Assert
+include Utils
 
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
@@ -18,7 +15,8 @@ this_dir = File.dirname(__FILE__)
 opts = {
   inaln: TEST_ALN,
   outdir: TEST_OUTDIR,
-  threads: 2
+  threads: 2,
+  db_otu_info: DB_OTU_INFO
 }
 
 assert_file opts[:inaln]
@@ -52,8 +50,9 @@ pintail_ids = File.join opts[:outdir],
                        ".pintail.accnos"
 
 # containers
-input_ids = Set.new
+input_ids    = Set.new
 chimeric_ids = Set.new
+db_otu_info  = Hash.new
 
 # mothur params
 mothur_params = "fasta=#{opts[:inaln]}, " +
@@ -83,6 +82,19 @@ Time.time_it("Validate input data", logger) do
   end
 end
 
+######################################################################
+# read OTU metadata
+###################
+
+Time.time_it("Read db OTU metadata", logger) do
+  read_otu_metadata opts[:db_otu_info]
+end
+
+###################
+# read OTU metadata
+######################################################################
+
+
 Time.time_it("Remove all gaps", logger) do
   cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
   log_cmd logger, cmd
@@ -93,7 +105,10 @@ end
 # slay the chimeras
 ###################
 
-Time.time_it("Chimera Slayer", logger) do
+# run = nil
+run = true
+
+Time.time_it("Chimera Slayer", logger, run) do
   # in must be same length as reference
   cmd = "#{MOTHUR} " +
         "'#chimera.slayer(#{mothur_params})'"
@@ -101,7 +116,7 @@ Time.time_it("Chimera Slayer", logger) do
   Process.run_it! cmd
 end
 
-Time.time_it("Read slayer chimeras", logger) do
+Time.time_it("Read slayer chimeras", logger, run) do
   File.open(slayer_ids).each_line do |line|
     id = line.chomp
     logger.debug { "Chimera Slayer flagged #{id}" }
@@ -109,14 +124,14 @@ Time.time_it("Read slayer chimeras", logger) do
   end
 end
 
-Time.time_it("Uchime", logger) do
+Time.time_it("Uchime", logger, run) do
   cmd = "#{MOTHUR} " +
         "'#chimera.uchime(#{mothur_params})'"
   log_cmd logger, cmd
   Process.run_it! cmd
 end
 
-Time.time_it("Read uchime chimeras", logger) do
+Time.time_it("Read uchime chimeras", logger, run) do
   File.open(uchime_ids).each_line do |line|
     id = line.chomp
     logger.debug { "Uchime flagged #{id}" }
@@ -124,7 +139,7 @@ Time.time_it("Read uchime chimeras", logger) do
   end
 end
 
-Time.time_it("Pintail", logger) do
+Time.time_it("Pintail", logger, run) do
   cmd = "#{MOTHUR} " +
         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
         "template=#{GOLD_ALN}, " +
@@ -136,7 +151,7 @@ Time.time_it("Pintail", logger) do
   Process.run_it! cmd
 end
 
-Time.time_it("Read Pintail chimeras", logger) do
+Time.time_it("Read Pintail chimeras", logger, run) do
   File.open(pintail_ids).each_line do |line|
     id = line.chomp
     logger.debug { "Pintail flagged #{id}" }
