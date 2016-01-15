@@ -11,6 +11,10 @@ module Utils
     logger.debug { "Running: #{cmd}" }
   end
 
+  def gap? base
+    base.match(/[-\.~]/)
+  end
+
   def read_mask fname
     mask_positions = []
 

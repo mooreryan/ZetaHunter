@@ -7,3 +7,7 @@
 ### OTU Metadata ###
 
 Lines beginning with `#` are considered comments.
+
+## Gap positions ##
+
+`char.match(/[-\.~]/)`

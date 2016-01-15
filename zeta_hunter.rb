@@ -51,10 +51,13 @@ pintail_ids = File.join opts[:outdir],
                        ".pintail.accnos"
 
 # containers
-input_ids    = Set.new
+
 chimeric_ids = Set.new
+input_seqs = {}
 db_otu_info  = {}
+input_ids    = Set.new
 mask         = []
+gap_posns = []
 
 # mothur params
 mothur_params = "fasta=#{opts[:inaln]}, " +
@@ -67,18 +70,27 @@ Time.time_it("Create needed directories", logger) do
   FileUtils.mkdir_p outdir_tmp
 end
 
-Time.time_it("Validate input data", logger) do
+Time.time_it("Process input data", logger) do
   FastaFile.open(opts[:inaln]).each_record do |head, seq|
     assert_seq_len seq, head
 
     id = head.split(" ")
 
-    assert !input_ids.include?(id),
-           "ID %s is repeated in file %s",
-           id,
-           opts[:inaln]
-
+    # track ids
+    refute_includes input_ids, id
     input_ids << id
+
+    # read seq into memory
+    refute_has_key input_seqs, id
+    input_seqs[id] = seq
+
+    # gap posistions in input data
+    these_gap_posns = Set.new
+    seq.each_char.with_index do |base, posn|
+      these_gap_posns << posn if gap?(base)
+    end
+
+    gap_posns << these_gap_posns
   end
 end
 
