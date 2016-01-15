@@ -16,7 +16,8 @@ opts = {
   inaln: TEST_ALN,
   outdir: TEST_OUTDIR,
   threads: 2,
-  db_otu_info: DB_OTU_INFO
+  db_otu_info: DB_OTU_INFO,
+  mask: MASK
 }
 
 assert_file opts[:inaln]
@@ -52,7 +53,8 @@ pintail_ids = File.join opts[:outdir],
 # containers
 input_ids    = Set.new
 chimeric_ids = Set.new
-db_otu_info  = Hash.new
+db_otu_info  = {}
+mask         = []
 
 # mothur params
 mothur_params = "fasta=#{opts[:inaln]}, " +
@@ -67,9 +69,7 @@ end
 
 Time.time_it("Validate input data", logger) do
   FastaFile.open(opts[:inaln]).each_record do |head, seq|
-    msg = "Sequence #{head} has length #{seq.length}. " +
-          "Should be #{SILVA_ALN_LEN}"
-    assert seq.length == SILVA_ALN_LEN, msg
+    assert_seq_len seq, head
 
     id = head.split(" ")
 
@@ -83,15 +83,21 @@ Time.time_it("Validate input data", logger) do
 end
 
 ######################################################################
-# read OTU metadata
-###################
+# read provided info
+####################
 
 Time.time_it("Read db OTU metadata", logger) do
-  read_otu_metadata opts[:db_otu_info]
+  db_otu_info = read_otu_metadata opts[:db_otu_info]
+  logger.debug { "DB OTU INFO: #{db_otu_info.inspect}" }
 end
 
-###################
-# read OTU metadata
+Time.time_it("Read mask info", logger) do
+  mask = read_mask opts[:mask]
+  logger.debug { "Mask: #{mask.inspect}" }
+end
+
+####################
+# read provided info
 ######################################################################
 
 

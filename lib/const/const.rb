@@ -17,6 +17,7 @@ module Const
   SILVA_FREQ = File.join ASSETS_DIR, "silva.bacteria.freq"
   SILVA_QUAN = File.join ASSETS_DIR, "silva.bacteria.pintail.quan"
   DB_OTU_INFO = File.join ASSETS_DIR, "db_otu_info.txt"
+  MASK = File.join ASSETS_DIR, "mask.fa"
 
   # test files
   TEST_ALN = File.join TEST_DIR, "full_and_part.fa"
