@@ -5,7 +5,7 @@ module Const
   BIN_DIR = File.join PROJ_DIR, "bin"
   LIB_DIR = File.join PROJ_DIR, "lib"
   ASSETS_DIR = File.join PROJ_DIR, "assets"
-  TEST_DIR = File.join "test_files"
+  TEST_DIR = File.join PROJ_DIR, "test_files"
   TEST_OUTDIR = File.join TEST_DIR, "output"
 
   # binaries
@@ -17,11 +17,15 @@ module Const
   SILVA_FREQ = File.join ASSETS_DIR, "silva.bacteria.freq"
   SILVA_QUAN = File.join ASSETS_DIR, "silva.bacteria.pintail.quan"
   DB_OTU_INFO = File.join ASSETS_DIR, "db_otu_info.txt"
+  DB_SEQS = File.join ASSETS_DIR, "db_seqs.fa"
   MASK = File.join ASSETS_DIR, "mask.fa"
+  OUTGROUPS = File.join ASSETS_DIR, "outgroup_names.txt"
 
   # test files
   TEST_ALN = File.join TEST_DIR, "full_and_part.fa"
 
   # info
   SILVA_ALN_LEN = 50000
+  CLUSTER_CUTOFF = 0.03
+
 end

@@ -11,3 +11,14 @@ Lines beginning with `#` are considered comments.
 ## Gap positions ##
 
 `char.match(/[-\.~]/)`
+
+## Sequence headers ##
+
+The headers are split on " " characters and the first part of that is
+taken to be the sequence ID and must be unique.
+
+## TODO ##
+
+- names/counts file for cluster step
+- entropy
+- med

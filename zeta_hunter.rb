@@ -17,8 +17,22 @@ opts = {
   outdir: TEST_OUTDIR,
   threads: 2,
   db_otu_info: DB_OTU_INFO,
-  mask: MASK
+  mask: MASK,
+  db_seqs: DB_SEQS,
 }
+
+######################################################################
+# FOR TEST ONLY -- remove outdir before running
+###############################################
+
+cmd = "rm -r #{opts[:outdir]}"
+log_cmd logger, cmd
+Process.run_it cmd
+
+###############################################
+# FOR TEST ONLY -- remove outdir before running
+######################################################################
+
 
 assert_file opts[:inaln]
 
@@ -50,14 +64,22 @@ pintail_ids = File.join opts[:outdir],
                        "#{inaln_info[:base]}" +
                        ".pintail.accnos"
 
+cluster_me = File.join outdir_tmp, "cluster_me.fa"
+cluster_me_dist = File.join outdir_tmp, "cluster_me.phylip.dist"
+cluster_me_list = File.join outdir_tmp, "cluster_me.phylip.an.list"
+
 # containers
 
 chimeric_ids = Set.new
-input_seqs = {}
 db_otu_info  = {}
-input_ids    = Set.new
-mask         = []
+db_seq_ids = Set.new
+db_seqs = {}
 gap_posns = []
+input_ids    = Set.new
+input_seqs = {}
+mask         = []
+outgroup_names = Set.new
+
 
 # mothur params
 mothur_params = "fasta=#{opts[:inaln]}, " +
@@ -70,29 +92,20 @@ Time.time_it("Create needed directories", logger) do
   FileUtils.mkdir_p outdir_tmp
 end
 
+######################################################################
+# process user input alignment
+##############################
+
 Time.time_it("Process input data", logger) do
-  FastaFile.open(opts[:inaln]).each_record do |head, seq|
-    assert_seq_len seq, head
-
-    id = head.split(" ")
-
-    # track ids
-    refute_includes input_ids, id
-    input_ids << id
-
-    # read seq into memory
-    refute_has_key input_seqs, id
-    input_seqs[id] = seq
-
-    # gap posistions in input data
-    these_gap_posns = Set.new
-    seq.each_char.with_index do |base, posn|
-      these_gap_posns << posn if gap?(base)
-    end
-
-    gap_posns << these_gap_posns
-  end
+  process_input_aln file: opts[:inaln],
+                    seq_ids: input_ids,
+                    seqs: input_seqs,
+                    gap_posns: gap_posns
 end
+
+##############################
+# process user input alignment
+######################################################################
 
 ######################################################################
 # read provided info
@@ -106,6 +119,20 @@ end
 Time.time_it("Read mask info", logger) do
   mask = read_mask opts[:mask]
   logger.debug { "Mask: #{mask.inspect}" }
+end
+
+Time.time_it("Update shared gap posns with db seqs", logger) do
+  process_input_aln file: opts[:db_seqs],
+                    seq_ids: db_seq_ids,
+                    seqs: db_seqs,
+                    gap_posns: gap_posns
+end
+
+
+Time.time_it("Read outgroups", logger) do
+  File.open(OUTGROUPS).each_line do |line|
+    outgroup_names << line.chomp
+  end
 end
 
 ####################
@@ -123,8 +150,8 @@ end
 # slay the chimeras
 ###################
 
-# run = nil
-run = true
+run = nil
+# run = true
 
 Time.time_it("Chimera Slayer", logger, run) do
   # in must be same length as reference
@@ -184,3 +211,49 @@ end
 ###################
 # slay the chimeras
 ######################################################################
+
+######################################################################
+# cluster
+#########
+
+Time.time_it("Write combined fasta", logger) do
+  File.open(cluster_me, "w") do |f|
+    input_seqs.each { |head, seq| f.printf ">%s\n%s\n", head, seq }
+    db_seqs.each { |head, seq| f.printf ">%s\n%s\n", head, seq }
+  end
+end
+
+Time.time_it("Distance", logger) do
+  cmd = "#{MOTHUR} " +
+        "'#dist.seqs(fasta=#{cluster_me}, " +
+        "outputdir=#{outdir_tmp}, " +
+        "output=lt, " +
+        "processors=#{opts[:threads]})'"
+
+  log_cmd logger, cmd
+  Process.run_it! cmd
+end
+
+Time.time_it("Cluster", logger) do
+  cmd = "#{MOTHUR} " +
+        "'#cluster(phylip=#{cluster_me_dist})'"
+
+  log_cmd logger, cmd
+  Process.run_it! cmd
+end
+
+Time.time_it("Get OTU list", logger) do
+  cmd = "#{MOTHUR} '#get.otulist(list=#{cluster_me_list})'"
+  log_cmd logger, cmd
+  Process.run_it! cmd
+end
+
+
+#########
+# cluster
+######################################################################
+
+FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
+FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
+FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
+FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"

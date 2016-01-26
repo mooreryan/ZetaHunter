@@ -12,8 +12,32 @@ module Utils
   end
 
   def gap? base
-    base.match(/[-\.~]/)
+    base.match /[^ACTGUN]/
   end
+
+  def get_gap_posns seq
+    these_gap_posns = Set.new
+    seq.each_char.with_index do |base, posn|
+      these_gap_posns << posn if gap?(base)
+    end
+  end
+
+  def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
+    FastaFile.open(file).each_record do |head, seq|
+      assert_seq_len seq, head
+
+      id = head.split(" ").first
+
+      refute_includes seq_ids, id
+      seq_ids << id
+
+      refute_has_key seqs, id
+      seqs[id] = seq
+
+      update_gap_posns gap_posns, seq
+    end
+  end
+
 
   def read_mask fname
     mask_positions = []
@@ -48,5 +72,9 @@ module Utils
     end
 
     db_otu_info
+  end
+
+  def update_gap_posns gap_posns, seq
+    gap_posns << get_gap_posns(seq)
   end
 end
