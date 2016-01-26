@@ -20,6 +20,15 @@ module Assert
                 fname
   end
 
+  def assert_includes coll, obj
+    assert coll.respond_to? :include?
+
+    assert coll.include?(obj),
+           "Expected %s to include %s",
+           coll.inspect,
+           obj.inspect
+  end
+
   def assert_keys hash, *keys
     assert hash.respond_to? :[]
 
