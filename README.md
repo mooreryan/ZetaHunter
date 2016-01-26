@@ -10,7 +10,7 @@ Lines beginning with `#` are considered comments.
 
 ## Gap positions ##
 
-`char.match(/[-\.~]/)`
+`base.match /[^ACTGUN]/i`
 
 ## Sequence headers ##
 

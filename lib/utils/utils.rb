@@ -12,7 +12,7 @@ module Utils
   end
 
   def gap? base
-    base.match /[^ACTGUN]/
+    base.match /[^ACTGUN]/i
   end
 
   def get_gap_posns seq
