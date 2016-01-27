@@ -20,6 +20,8 @@ module Utils
     seq.each_char.with_index do |base, posn|
       these_gap_posns << posn if gap?(base)
     end
+
+    these_gap_posns
   end
 
   def get_otu_call otu_call_counts
@@ -78,7 +80,7 @@ module Utils
       seq_ids << id
 
       refute_has_key seqs, id
-      seqs[id] = seq
+      seqs[id] =  { orig: seq }
 
       update_gap_posns gap_posns, seq
     end
@@ -91,7 +93,7 @@ module Utils
     FastaFile.open(fname).each_record do |head, seq|
       assert_seq_len seq, "Mask"
 
-      assert !seq.match(/[^-*~\.]/), "Improper characters in the mask"
+      refute seq.match(/[^-*~\.]/), "Improper characters in the mask"
 
       seq.each_char.with_index do |char, idx|
         mask_positions << idx if char == "*"
@@ -122,5 +124,27 @@ module Utils
 
   def update_gap_posns gap_posns, seq
     gap_posns << get_gap_posns(seq)
+  end
+
+  def update_with_degapped_and_mask seqs, mask, shared_gap_posns
+    seqs.each do |head, info|
+      assert head
+      assert info
+      assert_keys info, :orig
+
+      orig = info[:orig]
+      masked = ""
+      degapped = ""
+      orig.each_char.with_index do |base, posn|
+        masked << base if mask.include? posn
+        degapped << base if shared_gap_posns.include? posn
+      end
+
+      assert masked.length == mask.length
+      assert degapped.length == shared_gap_posns.count
+
+      seqs[head][:masked] = masked
+      seqs[head][:degapped] = degapped
+    end
   end
 end

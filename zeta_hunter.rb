@@ -151,6 +151,22 @@ end
 # read provided info
 ######################################################################
 
+######################################################################
+# degap & mask
+##############
+
+shared_gap_posns = gap_posns.reduce(:&)
+
+update_with_degapped_and_mask input_seqs, mask, shared_gap_posns
+update_with_degapped_and_mask db_seqs, mask, shared_gap_posns
+
+assert_keys input_seqs.first.last, :masked, :degapped
+
+##############
+# degap & mask
+######################################################################
+
+
 
 Time.time_it("Remove all gaps", logger) do
   cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
