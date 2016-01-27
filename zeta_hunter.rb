@@ -82,18 +82,19 @@ chimeric_seqs =
 
 # containers
 
-chimeric_ids = Set.new
-db_otu_info  = {}
-db_seq_ids = Set.new
-db_seqs = {}
-entropy = {}
-gap_posns = []
-input_ids    = Set.new
-input_seqs = {}
-mask         = []
-outgroup_names = Set.new
-otu_info = []
-total_entropy = 0
+chimeric_ids             = Set.new
+db_otu_info              = {}
+db_seq_ids               = Set.new
+db_seqs                  = {}
+entropy                  = []
+gap_posns                = []
+input_ids                = Set.new
+input_seqs               = {}
+mask                     = []
+masked_input_seq_entropy = {}
+outgroup_names           = Set.new
+otu_info                 = []
+total_entropy            = 0
 
 
 # mothur params
@@ -130,11 +131,11 @@ end
 
 Time.time_it("Read entropy info", logger) do
   File.open(ENTROPY).each_line do |line|
-    posn, ent = line.chomp.split "\t"
-    assert !posn.nil? && !posn.empty?
+    idx, ent = line.chomp.split "\t"
+    assert !idx.nil? && !idx.empty?
     assert !ent.nil? && !ent.empty?
 
-    entropy[posn.to_i] = ent.to_f
+    entropy[idx.to_i] = ent.to_f
   end
 
   assert entropy.count == MASK_LEN,
@@ -142,7 +143,7 @@ Time.time_it("Read entropy info", logger) do
          entropy.count,
          MASK_LEN
 
-  total_entropy = entropy.values.reduce(:+)
+  total_entropy = entropy.reduce(:+)
 end
 
 Time.time_it("Read db OTU metadata", logger) do
@@ -170,8 +171,6 @@ Time.time_it("Read outgroups", logger) do
   end
 end
 
-
-
 ####################
 # read provided info
 ######################################################################
@@ -193,11 +192,28 @@ end
 # degap & mask
 ######################################################################
 
-Time.time_it("Remove all gaps", logger) do
-  cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
-  log_cmd logger, cmd
-  Process.run_it! cmd
+# Time.time_it("Remove all gaps", logger) do
+#   cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
+#   log_cmd logger, cmd
+#   Process.run_it! cmd
+# end
+
+######################################################################
+# entropy for masked seqs
+#########################
+
+Time.time_it("Get entropy for masked user seqs", logger) do
+  input_seqs.each do |head, seqs|
+    refute_has_key masked_input_seq_entropy, head
+    seq_entropy = get_seq_entropy seqs[:masked], entropy
+    masked_input_seq_entropy[head] = seq_entropy
+  end
 end
+
+#########################
+# entropy for masked seqs
+######################################################################
+
 
 ######################################################################
 # slay the chimeras

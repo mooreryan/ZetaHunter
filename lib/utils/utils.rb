@@ -76,6 +76,32 @@ module Utils
     counts
   end
 
+  def get_seq_entropy seq, entropy
+    assert seq
+    assert entropy
+    assert seq.length == entropy.length,
+           "Seq length was %d should be %d",
+           seq.length,
+           entropy.length
+
+    bases_in_mask = 0
+    per_posn_entropy = seq.each_char.map.with_index do |base, idx|
+      if gap? base
+        0
+      else
+        bases_in_mask += 1
+        entropy[idx]
+      end
+    end
+
+    this_entropy = per_posn_entropy.reduce(:+)
+    total_entropy = entropy.reduce(:+).to_f
+    perc_total_entropy = (this_entropy / total_entropy * 100).round(3)
+
+    { perc_total_entropy: perc_total_entropy,
+      bases_in_mask: bases_in_mask }
+  end
+
   def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
     FastaFile.open(file).each_record do |head, seq|
       assert_seq_len seq, head
