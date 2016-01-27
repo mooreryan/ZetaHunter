@@ -86,12 +86,14 @@ chimeric_ids = Set.new
 db_otu_info  = {}
 db_seq_ids = Set.new
 db_seqs = {}
+entropy = {}
 gap_posns = []
 input_ids    = Set.new
 input_seqs = {}
 mask         = []
 outgroup_names = Set.new
 otu_info = []
+total_entropy = 0
 
 
 # mothur params
@@ -126,6 +128,23 @@ end
 # read provided info
 ####################
 
+Time.time_it("Read entropy info", logger) do
+  File.open(ENTROPY).each_line do |line|
+    posn, ent = line.chomp.split "\t"
+    assert !posn.nil? && !posn.empty?
+    assert !ent.nil? && !ent.empty?
+
+    entropy[posn.to_i] = ent.to_f
+  end
+
+  assert entropy.count == MASK_LEN,
+         "Entropy count was %d should be %d",
+         entropy.count,
+         MASK_LEN
+
+  total_entropy = entropy.values.reduce(:+)
+end
+
 Time.time_it("Read db OTU metadata", logger) do
   db_otu_info = read_otu_metadata opts[:db_otu_info]
   logger.debug { "DB OTU INFO: #{db_otu_info.inspect}" }
@@ -150,6 +169,8 @@ Time.time_it("Read outgroups", logger) do
     outgroup_names << line.chomp
   end
 end
+
+
 
 ####################
 # read provided info

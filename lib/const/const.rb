@@ -7,6 +7,7 @@ module Const
   ASSETS_DIR = File.join PROJ_DIR, "assets"
   TEST_DIR = File.join PROJ_DIR, "test_files"
   TEST_OUTDIR = File.join TEST_DIR, "output"
+  ENTROPY_DIR = File.join ASSETS_DIR, "db_mask_entropy"
 
   # binaries
   MOTHUR = File.join BIN_DIR, "osx", "mothur", "mothur"
@@ -20,6 +21,7 @@ module Const
   DB_SEQS = File.join ASSETS_DIR, "db_seqs.fa"
   MASK = File.join ASSETS_DIR, "mask.fa"
   OUTGROUPS = File.join ASSETS_DIR, "outgroup_names.txt"
+  ENTROPY = File.join ENTROPY_DIR, "entropy.txt"
 
   # test files
   TEST_ALN = File.join TEST_DIR, "full_and_part.fa"
@@ -27,5 +29,6 @@ module Const
   # info
   SILVA_ALN_LEN = 50000
   CLUSTER_CUTOFF = 0.03
+  MASK_LEN = 1282
 
 end
