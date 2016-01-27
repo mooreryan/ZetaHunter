@@ -16,9 +16,15 @@ module Utils
   end
 
   def get_gap_posns seq
-    these_gap_posns = Set.new
-    seq.each_char.with_index do |base, posn|
-      these_gap_posns << posn if gap?(base)
+    # these_gap_posns = Set.new
+    # seq.each_char.with_index do |base, posn|
+    #   these_gap_posns << posn if gap?(base)
+    # end
+
+    these_gap_posns = []
+
+    seq.each_char.with_index do |base, idx|
+      these_gap_posns << idx if gap?(base)
     end
 
     these_gap_posns
@@ -80,12 +86,13 @@ module Utils
       seq_ids << id
 
       refute_has_key seqs, id
-      seqs[id] =  { orig: seq }
+      seqs[id] =  { orig: rna_to_dna(seq) }
+
+      refute seqs[id][:orig].match(/U/i)
 
       update_gap_posns gap_posns, seq
     end
   end
-
 
   def read_mask fname
     mask_positions = []
@@ -122,6 +129,10 @@ module Utils
     db_otu_info
   end
 
+  def rna_to_dna seq
+    seq.gsub(/U/, "T").gsub(/u/, "t")
+  end
+
   def update_gap_posns gap_posns, seq
     gap_posns << get_gap_posns(seq)
   end
@@ -133,12 +144,16 @@ module Utils
       assert_keys info, :orig
 
       orig = info[:orig]
-      masked = ""
-      degapped = ""
-      orig.each_char.with_index do |base, posn|
-        masked << base if mask.include? posn
-        degapped << base if shared_gap_posns.include? posn
-      end
+      # masked = ""
+      # degapped = ""
+      # orig.each_char.with_index do |base, posn|
+      #   masked << base if mask.include? posn
+      #   degapped << base if shared_gap_posns.include? posn
+      # end
+
+      # this way is faster
+      masked = mask.map { |idx| orig[idx] }.join
+      degapped = shared_gap_posns.map { |idx| orig[idx] }.join
 
       assert masked.length == mask.length
       assert degapped.length == shared_gap_posns.count

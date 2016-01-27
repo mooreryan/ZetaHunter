@@ -114,6 +114,8 @@ Time.time_it("Process input data", logger) do
                     seq_ids: input_ids,
                     seqs: input_seqs,
                     gap_posns: gap_posns
+
+  refute input_seqs.empty?, "Did not find any input seqs"
 end
 
 ##############################
@@ -134,11 +136,13 @@ Time.time_it("Read mask info", logger) do
   logger.debug { "Num mask bases: #{mask.count}" }
 end
 
-Time.time_it("Update shared gap posns with db seqs", logger, run) do
+Time.time_it("Update shared gap posns with db seqs", logger) do
   process_input_aln file: opts[:db_seqs],
                     seq_ids: db_seq_ids,
                     seqs: db_seqs,
                     gap_posns: gap_posns
+
+  refute db_seqs.empty?, "Did not find any DB seqs"
 end
 
 Time.time_it("Read outgroups", logger) do
@@ -157,16 +161,16 @@ end
 
 shared_gap_posns = gap_posns.reduce(:&)
 
-update_with_degapped_and_mask input_seqs, mask, shared_gap_posns
-update_with_degapped_and_mask db_seqs, mask, shared_gap_posns
+Time.time_it("Degap and mask", logger) do
+  update_with_degapped_and_mask input_seqs, mask, shared_gap_posns
+  update_with_degapped_and_mask db_seqs, mask, shared_gap_posns
 
-assert_keys input_seqs.first.last, :masked, :degapped
+  assert_keys input_seqs.first.last, :masked, :degapped
+end
 
 ##############
 # degap & mask
 ######################################################################
-
-
 
 Time.time_it("Remove all gaps", logger) do
   cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
@@ -248,11 +252,21 @@ end
 # cluster
 #########
 
-Time.time_it("Write combined fasta", logger, run) do
+run = true
+Time.time_it("Write masked, combined fasta", logger, run) do
+  refute input_seqs.empty?, "Did not find any input seqs"
+  refute db_seqs.empty?, "Did not find any DB seqs"
   File.open(cluster_me, "w") do |f|
-    input_seqs.each { |head, seq| f.printf ">%s\n%s\n", head, seq }
-    db_seqs.each { |head, seq| f.printf ">%s\n%s\n", head, seq }
+    input_seqs.each do |head, seqs|
+      f.printf ">%s\n%s\n", head, seqs[:masked]
+    end
+
+    db_seqs.each do |head, seqs|
+      f.printf ">%s\n%s\n", head, seqs[:masked]
+    end
   end
+
+  logger.info { "We will cluster this file: #{cluster_me}" }
 end
 
 Time.time_it("Distance", logger, run) do
