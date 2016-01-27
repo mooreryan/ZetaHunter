@@ -22,6 +22,52 @@ module Utils
     end
   end
 
+  def get_otu_call otu_call_counts
+    assert otu_call_counts
+
+    otu_call = ""
+    otu_call_counts.each do |otu, count|
+      assert otu
+      assert count
+
+      unless otu == "USR"
+        otu_call = otu
+        break
+      end
+    end
+
+    otu_call = "NEW_USR_OTU" if otu_call.empty?
+
+    refute otu_call.empty?,
+           "Could not determine OTU for %s",
+           otu_call_counts
+
+    otu_call
+  end
+
+  def get_otu_calls ids, db_otu_info, input_ids
+    ids.map do |id|
+      if db_otu_info.has_key? id
+        db_otu_info[id][:otu]
+      else
+        assert_includes input_ids, id
+        "USR"
+      end
+    end
+  end
+
+  def get_otu_call_counts otu_calls
+    counts = otu_calls.
+      group_by(&:itself).
+      map { |otu, arr| [otu, arr.count] }.
+      sort_by { |otu, count| count }.
+      reverse
+
+    refute counts.empty?, "No count info for %s", otu_calls.inspect
+
+    counts
+  end
+
   def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
     FastaFile.open(file).each_record do |head, seq|
       assert_seq_len seq, head
