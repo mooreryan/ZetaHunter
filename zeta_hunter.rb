@@ -25,12 +25,12 @@ opts = {
 # FOR TEST ONLY -- remove outdir before running
 ###############################################
 
-# cmd = "rm -r #{opts[:outdir]}"
-# log_cmd logger, cmd
-# Process.run_it cmd
+cmd = "rm -r #{opts[:outdir]}"
+log_cmd logger, cmd
+Process.run_it cmd
 
-run = nil
-# run = true
+# run = nil
+run = true
 
 ###############################################
 # FOR TEST ONLY -- remove outdir before running
@@ -42,6 +42,11 @@ assert_file opts[:inaln]
 inaln_info = File.parse_fname opts[:inaln]
 
 outdir_tmp = File.join opts[:outdir], "tmp"
+
+chimera_dir = File.join opts[:outdir], "chimera_details"
+
+chimera_details =
+  File.join opts[:outdir], "*.{pintail,uchime,slayer}.*"
 
 inaln_nogaps = File.join outdir_tmp,
                          "#{inaln_info[:base]}.nogaps.fa"
@@ -82,7 +87,7 @@ chimeric_seqs =
 
 # containers
 
-chimeric_ids             = Set.new
+chimeric_ids             = {}
 db_otu_info              = {}
 db_seq_ids               = Set.new
 db_seqs                  = {}
@@ -148,7 +153,7 @@ end
 
 Time.time_it("Read db OTU metadata", logger) do
   db_otu_info = read_otu_metadata opts[:db_otu_info]
-  logger.debug { "DB OTU INFO: #{db_otu_info.inspect}" }
+  # logger.debug { "DB OTU INFO: #{db_otu_info.inspect}" }
 end
 
 Time.time_it("Read mask info", logger) do
@@ -230,8 +235,9 @@ end
 Time.time_it("Read slayer chimeras", logger, run) do
   File.open(slayer_ids).each_line do |line|
     id = line.chomp
+    hash_add chimeric_ids, id, "ChimeraSlayer"
+
     logger.debug { "Chimera Slayer flagged #{id}" }
-    chimeric_ids << [id, "ChimeraSlayer"]
   end
 end
 
@@ -245,8 +251,9 @@ end
 Time.time_it("Read uchime chimeras", logger, run) do
   File.open(uchime_ids).each_line do |line|
     id = line.chomp
+    hash_add chimeric_ids, id, "uchime"
+
     logger.debug { "Uchime flagged #{id}" }
-    chimeric_ids << [id, "uchime"]
   end
 end
 
@@ -265,16 +272,16 @@ end
 Time.time_it("Read Pintail chimeras", logger, run) do
   File.open(pintail_ids).each_line do |line|
     id = line.chomp
+    hash_add chimeric_ids, id, "Pintail"
+
     logger.debug { "Pintail flagged #{id}" }
-    chimeric_ids << [id, "Pintail"]
   end
 end
 
 Time.time_it("Write chimeric seqs", logger) do
   File.open(chimeric_seqs, "w") do |f|
-    chimeric_ids.each do |id, software|
-      f.puts [id, software].join "\t"
-      logger.debug { "#{id} was flagged as chimeric by #{software}" }
+    chimeric_ids.sort_by { |k, v| k }.each do |id, software|
+      f.puts [id, software.sort.join(",")].join "\t"
     end
   end
 
@@ -331,7 +338,6 @@ Time.time_it("Get OTU list", logger, run) do
   Process.run_it! cmd
 end
 
-
 #########
 # cluster
 ######################################################################
@@ -354,6 +360,8 @@ end
 Time.time_it("Assign OTUs", logger) do
   # TODO generate good names for new OTUs
   File.open(otu_calls_f, "w") do |f|
+    f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+
     File.open(otu_file).each_line do |line|
       otu, id_str = line.chomp.split "\t"
       ids = id_str.split ","
@@ -369,7 +377,13 @@ Time.time_it("Assign OTUs", logger) do
       only_input_ids = ids.select { |id| input_ids.include?(id) }
 
       only_input_ids.each do |id|
-        f.puts [otu, id, otu_call, otu_call_counts.inspect].join "\t"
+        assert_keys masked_input_seq_entropy, id
+        perc_entropy = masked_input_seq_entropy[id]
+        f.puts [id,
+                otu_call,
+                perc_entropy[:perc_total_entropy],
+                perc_entropy[:perc_bases_in_mask],
+                otu_call_counts.inspect].join "\t"
       end
     end
   end
@@ -389,6 +403,9 @@ Time.time_it("Clean up", logger) do
   FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
   FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
   FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+  FileUtils.rm_r outdir_tmp
+  FileUtils.mkdir_p chimera_dir
+  FileUtils.mv Dir.glob(chimera_details), chimera_dir
 end
 
 ##########

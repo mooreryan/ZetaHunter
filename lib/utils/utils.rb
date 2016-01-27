@@ -1,10 +1,19 @@
 module Utils
+  @@usr_otu_num = 1
   def assert_seq_len seq, name="Sequence"
     assert seq.length == SILVA_ALN_LEN,
            "%s length is %d, but should be %d",
            name,
            seq.length,
            SILVA_ALN_LEN
+  end
+
+  def hash_add hash, key, obj
+    if hash.has_key? key
+      hash[key] << obj
+    else
+      hash[key] = [obj]
+    end
   end
 
   def log_cmd logger, cmd
@@ -44,7 +53,10 @@ module Utils
       end
     end
 
-    otu_call = "NEW_USR_OTU" if otu_call.empty?
+    if otu_call.empty?
+      otu_call = "USR-OTU-#{@@usr_otu_num}"
+      @@usr_otu_num += 1
+    end
 
     refute otu_call.empty?,
            "Could not determine OTU for %s",
@@ -96,10 +108,12 @@ module Utils
 
     this_entropy = per_posn_entropy.reduce(:+)
     total_entropy = entropy.reduce(:+).to_f
-    perc_total_entropy = (this_entropy / total_entropy * 100).round(3)
+    perc_total_entropy = (this_entropy / total_entropy * 100).round(1)
+    perc_bases_in_mask =
+      (bases_in_mask / MASK_LEN.to_f * 100).round(1)
 
     { perc_total_entropy: perc_total_entropy,
-      bases_in_mask: bases_in_mask }
+      perc_bases_in_mask: perc_bases_in_mask }
   end
 
   def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
