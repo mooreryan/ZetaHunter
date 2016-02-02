@@ -21,7 +21,8 @@ module Assert
   end
 
   def assert_includes coll, obj
-    assert coll.respond_to? :include?
+    assert coll.respond_to?(:include?),
+           "Collection does not respond to :include?"
 
     assert coll.include?(obj),
            "Expected %s to include %s",

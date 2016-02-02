@@ -1,5 +1,16 @@
 # LalaTeehee3000 #
 
+## Dependencies ##
+
+### Gems ###
+
+- `parse_fasta`
+- `systemu`
+
+For development...
+
+- `rspec`
+
 ## Assets ##
 
 `silva.gold.align` is from http://www.mothur.org/wiki/Silva_reference_files
@@ -20,5 +31,3 @@ taken to be the sequence ID and must be unique.
 ## TODO ##
 
 - names/counts file for cluster step
-- entropy
-- med
