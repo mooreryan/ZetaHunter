@@ -16,6 +16,10 @@ module Utils
     end
   end
 
+  def new_hash_of_arrays
+    Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
+  end
+
   def log_cmd logger, cmd
     logger.debug { "Running: #{cmd}" }
   end

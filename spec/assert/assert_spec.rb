@@ -1,6 +1,4 @@
-require "spec_helper.rb"
-
-p Assert::AssertionFailureError
+require "spec_helper"
 
 describe Assert::AssertionFailureError do
   it "is a kind of Exception" do
