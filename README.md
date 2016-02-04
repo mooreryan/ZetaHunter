@@ -4,12 +4,7 @@
 
 ### Gems ###
 
-- `parse_fasta`
-- `systemu`
-
-For development...
-
-- `rspec`
+See `Gemfile`
 
 ## Assets ##
 
