@@ -16,7 +16,7 @@ module Assert
 
   def assert_file fname
     self.assert File.exists?(fname),
-                "File '%s' does not exist.",
+                "Expected file '%s' to exist.",
                 fname
   end
 
@@ -25,13 +25,16 @@ module Assert
            "Collection does not respond to :include?"
 
     assert coll.include?(obj),
-           "Expected %s to include %s",
-           coll.inspect,
+           "Expected coll to include %s",
            obj.inspect
   end
 
   def assert_keys hash, *keys
-    assert hash.respond_to? :[]
+    assert hash.respond_to?(:[]),
+           "Collection does not respond to :[]"
+
+    assert keys.count > 0,
+           "Keys argument is empty"
 
     assert keys.all? { |key| hash[key] },
            "Not all keys are present"
@@ -42,20 +45,19 @@ module Assert
   end
 
   def refute_includes coll, obj
-    assert coll.respond_to? :include?
+    assert coll.respond_to?(:include?),
+           "Collection does not respond to :include?"
 
     refute coll.include?(obj),
-           "Expected %s not to include %s",
-           coll.inspect,
+           "Expected coll not to include %s",
            obj.inspect
   end
 
   def refute_has_key hash, key
-    assert hash.respond_to? :has_key?
+    assert hash.respond_to?(:has_key?), "First arg was not a hash"
 
     refute hash.has_key?(key),
-           "%s is already a key in %s",
-           key.inspect,
-           hash.keys.inspect
+           "Expected hash not to have key %s",
+           key.inspect
   end
 end
