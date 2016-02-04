@@ -4,14 +4,19 @@ module CoreExtensions
       Object::Time.now.strftime fmt
     end
 
-    def time_it title, logger=nil, do_block=true
-      if do_block
+    def time_it title="", logger=nil, run: true
+      if run
         t = Object::Time.now
 
         yield
 
-        msg = "#{title} finished in #{Object::Time.now - t} " +
-              "seconds"
+        time = Object::Time.now - t
+
+        if title == ""
+          msg = "Finished in #{time} seconds"
+        else
+          msg = "#{title} finished in #{time} seconds"
+        end
 
         if logger
           logger.info msg
@@ -26,6 +31,8 @@ end
 # require "logger"
 
 # Time.extend CoreExtensions::Time
+
+# Time.time_it { sleep(2) }
 
 # logger = Logger.new(STDERR)
 
