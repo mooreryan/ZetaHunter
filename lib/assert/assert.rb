@@ -40,6 +40,14 @@ module Assert
            "Not all keys are present"
   end
 
+  def assert_seq_len seq, name="Sequence"
+    assert seq.length == Const::SILVA_ALN_LEN,
+           "%s length is %d, but should be %d",
+           name,
+           seq.length,
+           Const::SILVA_ALN_LEN
+  end
+
   def refute test, msg="", *args
     assert !test, msg, *args
   end

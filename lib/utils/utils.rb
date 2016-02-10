@@ -1,27 +1,12 @@
 module Utils
   @@usr_otu_num = 1
-  def assert_seq_len seq, name="Sequence"
-    assert seq.length == SILVA_ALN_LEN,
-           "%s length is %d, but should be %d",
-           name,
-           seq.length,
-           SILVA_ALN_LEN
-  end
 
-  def hash_add hash, key, obj
-    if hash.has_key? key
-      hash[key] << obj
-    else
-      hash[key] = [obj]
-    end
-  end
-
-  def new_hash_of_arrays
-    Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
-  end
+  # def new_hash_of_arrays
+  #   Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
+  # end
 
   def log_cmd logger, cmd
-    logger.debug { "Running: #{cmd}" }
+    logger.debug "Running: #{cmd}"
   end
 
   def gap? base

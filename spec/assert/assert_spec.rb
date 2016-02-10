@@ -144,6 +144,36 @@ describe Assert do
     end
   end
 
+  let(:seq) { "A" * (Const::SILVA_ALN_LEN - 1) }
+
+  describe "#assert_seq_len" do
+    context "when sequence length is SILVA_ALN_LEN" do
+      it "passes" do
+        seq = "A" * Const::SILVA_ALN_LEN
+        expect(klass.assert_seq_len seq).to eq :pass
+      end
+    end
+
+    context "when sequence length is not SILVA_ALN_LEN" do
+      it "raises Assert::AssertionFailureError (with default msg)" do
+        msg = "Sequence length is #{Const::SILVA_ALN_LEN - 1}, " +
+              "but should be #{Const::SILVA_ALN_LEN}"
+
+        expect { klass.assert_seq_len seq }.
+          to raise_error Assert::AssertionFailureError, msg
+      end
+
+      it "raises Assert::AssertionFailureError (with custom msg)" do
+        name = "Apple phage"
+        msg = "#{name} length is #{Const::SILVA_ALN_LEN - 1}, " +
+              "but should be #{Const::SILVA_ALN_LEN}"
+
+        expect { klass.assert_seq_len seq, name }.
+          to raise_error Assert::AssertionFailureError, msg
+      end
+    end
+  end
+
   describe "#refute" do
     it "passes when test is false" do
       expect(klass.refute [1,2,3].include? 5).to eq :pass
