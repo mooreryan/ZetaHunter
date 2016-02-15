@@ -9,6 +9,24 @@ module Utils
     logger.debug "Running: #{cmd}"
   end
 
+  def escape_dashes str
+    str.gsub '-', '\-'
+  end
+
+  def dash_to_underscore str
+    str.gsub '-', '_'
+  end
+
+  def has_dash? str
+    str.include? "-"
+  end
+
+  def clean_fname str
+    str.split(File::SEPARATOR).
+      map { |s| s.gsub(/[^\p{Alnum}\.]+/, "_") }.
+      join(File::SEPARATOR)
+  end
+
   def gap? base
     base.match /[^ACTGUN]/i
   end

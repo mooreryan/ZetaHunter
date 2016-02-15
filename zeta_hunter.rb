@@ -21,23 +21,42 @@ opts = {
   db_seqs: DB_SEQS,
 }
 
-######################################################################
-# FOR TEST ONLY -- remove outdir before running
-###############################################
-
-cmd = "rm -r #{opts[:outdir]}"
-log_cmd logger, cmd
-Process.run_it cmd
-
-# run = nil
-run = true
-
-###############################################
-# FOR TEST ONLY -- remove outdir before running
-######################################################################
-
-
 assert_file opts[:inaln]
+assert_file opts[:db_otu_info]
+assert_file opts[:mask]
+assert_file opts[:db_seqs]
+
+######################################################################
+# clean file names for mothur
+#############################
+
+infiles = [opts[:inaln], opts[:db_otu_info], opts[:mask], opts[:db_seqs]]
+new_fnames = infiles.map do |fname|
+  new_fname = clean_fname fname
+  new_dirname = File.dirname new_fname
+
+  unless new_fname == fname
+    title = "Creating directory #{new_dirname} if it does not exist"
+    Time.time_it(title, logger) do
+      FileUtils.mkdir_p new_dirname
+    end
+
+    Time.time_it("Copying #{fname} to #{new_fname}", logger) do
+      FileUtils.cp fname, new_fname
+    end
+
+    assert_file new_fname
+  end
+
+  new_fname
+end
+opts[:inaln], opts[:db_otu_info], opts[:mask], opts[:db_seqs] = new_fnames
+
+opts[:outdir] = clean_fname opts[:outdir]
+
+#############################
+# clean file names for mothur
+######################################################################
 
 inaln_info = File.parse_fname opts[:inaln]
 
@@ -83,6 +102,23 @@ otu_calls_f =
 
 chimeric_seqs =
   File.join opts[:outdir], "#{inaln_info[:base]}.dangerous_seqs.txt"
+
+######################################################################
+# FOR TEST ONLY -- remove outdir before running
+###############################################
+
+cmd = "rm -r #{opts[:outdir]}"
+log_cmd logger, cmd
+Process.run_it cmd
+
+# run = nil
+# run = true
+
+###############################################
+# FOR TEST ONLY -- remove outdir before running
+######################################################################
+
+
 
 
 # containers
@@ -224,7 +260,7 @@ end
 # slay the chimeras
 ###################
 
-Time.time_it("Chimera Slayer", logger, run) do
+Time.time_it("Chimera Slayer", logger) do
   # in must be same length as reference
   cmd = "#{MOTHUR} " +
         "'#chimera.slayer(#{mothur_params})'"
@@ -232,7 +268,7 @@ Time.time_it("Chimera Slayer", logger, run) do
   Process.run_it! cmd
 end
 
-Time.time_it("Read slayer chimeras", logger, run) do
+Time.time_it("Read slayer chimeras", logger) do
   File.open(slayer_ids).each_line do |line|
     id = line.chomp
     hash_add chimeric_ids, id, "ChimeraSlayer"
@@ -241,14 +277,14 @@ Time.time_it("Read slayer chimeras", logger, run) do
   end
 end
 
-Time.time_it("Uchime", logger, run) do
+Time.time_it("Uchime", logger) do
   cmd = "#{MOTHUR} " +
         "'#chimera.uchime(#{mothur_params})'"
   log_cmd logger, cmd
   Process.run_it! cmd
 end
 
-Time.time_it("Read uchime chimeras", logger, run) do
+Time.time_it("Read uchime chimeras", logger) do
   File.open(uchime_ids).each_line do |line|
     id = line.chomp
     hash_add chimeric_ids, id, "uchime"
@@ -257,7 +293,7 @@ Time.time_it("Read uchime chimeras", logger, run) do
   end
 end
 
-Time.time_it("Pintail", logger, run) do
+Time.time_it("Pintail", logger) do
   cmd = "#{MOTHUR} " +
         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
         "template=#{GOLD_ALN}, " +
@@ -269,7 +305,7 @@ Time.time_it("Pintail", logger, run) do
   Process.run_it! cmd
 end
 
-Time.time_it("Read Pintail chimeras", logger, run) do
+Time.time_it("Read Pintail chimeras", logger) do
   File.open(pintail_ids).each_line do |line|
     id = line.chomp
     hash_add chimeric_ids, id, "Pintail"
@@ -297,7 +333,7 @@ end
 #########
 
 run = true
-Time.time_it("Write masked, combined fasta", logger, run) do
+Time.time_it("Write masked, combined fasta", logger) do
   refute input_seqs.empty?, "Did not find any input seqs"
   refute db_seqs.empty?, "Did not find any DB seqs"
   File.open(cluster_me, "w") do |f|
@@ -313,7 +349,7 @@ Time.time_it("Write masked, combined fasta", logger, run) do
   logger.info { "We will cluster this file: #{cluster_me}" }
 end
 
-Time.time_it("Distance", logger, run) do
+Time.time_it("Distance", logger) do
   cmd = "#{MOTHUR} " +
         "'#dist.seqs(fasta=#{cluster_me}, " +
         "outputdir=#{outdir_tmp}, " +
@@ -324,7 +360,7 @@ Time.time_it("Distance", logger, run) do
   Process.run_it! cmd
 end
 
-Time.time_it("Cluster", logger, run) do
+Time.time_it("Cluster", logger) do
   cmd = "#{MOTHUR} " +
         "'#cluster(phylip=#{cluster_me_dist})'"
 
@@ -332,7 +368,7 @@ Time.time_it("Cluster", logger, run) do
   Process.run_it! cmd
 end
 
-Time.time_it("Get OTU list", logger, run) do
+Time.time_it("Get OTU list", logger) do
   cmd = "#{MOTHUR} '#get.otulist(list=#{cluster_me_list})'"
   log_cmd logger, cmd
   Process.run_it! cmd

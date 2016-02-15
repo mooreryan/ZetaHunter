@@ -9,6 +9,39 @@ describe Utils do
     it "prints command to Logger level debug"
   end
 
+  describe "#escape_dashes" do
+    it "returns str with each '-' replaced with '\-'" do
+      str = "-app--le---p"
+      expect(klass.escape_dashes str).to eq '\-app\-\-le\-\-\-p'
+    end
+  end
+
+  describe "#dash_to_underscore" do
+    it "returns str with dashes replaces with underscores" do
+      str = "-app--le---p"
+      expect(klass.dash_to_underscore str).to eq '_app__le___p'
+    end
+  end
+
+  describe "has_dash?" do
+    it "returns true if string has a dash" do
+      str = "apple-pie"
+      expect(klass.has_dash? str).to be true
+    end
+
+    it "returns false if string doesn't have a dash" do
+      str = "applepie"
+      expect(klass.has_dash? str).to be false
+    end
+  end
+
+  describe "#clean_fname" do
+    it "cleans the file name" do
+      str = "/Users/moorer/ap38*02.9-_;>46.txt"
+      expect(klass.clean_fname str).to eq "/Users/moorer/ap38_02.9_46.txt"
+    end
+  end
+
   describe "#gap?" do
     context "the character is an A C T G U or N (case insensitive)" do
       it "returns nil" do
