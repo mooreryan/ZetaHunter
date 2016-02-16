@@ -7,24 +7,74 @@ include Utils
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
 File.extend CoreExtensions::File
+Hash.include CoreExtensions::Hash
 
 logger = Logger.new STDERR
 
 this_dir = File.dirname(__FILE__)
 
-opts = {
-  inaln: TEST_ALN,
-  outdir: TEST_OUTDIR,
-  threads: 2,
-  db_otu_info: DB_OTU_INFO,
-  mask: MASK,
-  db_seqs: DB_SEQS,
-}
+
+require "trollop"
+
+opts = Trollop.options do
+  banner <<-EOS
+
+  Hunt them Zetas!
+
+  Options:
+  EOS
+
+  opt(:inaln,
+      "Input alignment",
+      type: :string,
+      default: TEST_ALN)
+
+  opt(:outdir,
+      "Directory for output",
+      type: :string,
+      default: TEST_OUTDIR)
+
+  opt(:threads,
+      "Number of processors to use",
+      type: :integer,
+      default: 2)
+
+  opt(:db_otu_info,
+      "Database OTU info file name",
+      type: :string,
+      default: DB_OTU_INFO)
+
+  opt(:mask, "Fasta file with the mask",
+      type: :string,
+      default: MASK)
+
+  opt(:db_seqs, "Fasta file with aligned DB seqs",
+      type: :string,
+      default: DB_SEQS)
+
+  opt(:mothur, "The mothur executable",
+      type: :string,
+      default: MOTHUR)
+end
+
+# opts = {
+#   inaln: TEST_ALN,
+#   outdir: TEST_OUTDIR,
+#   threads: 2,
+#   db_otu_info: DB_OTU_INFO,
+#   mask: MASK,
+#   db_seqs: DB_SEQS,
+# }
 
 assert_file opts[:inaln]
 assert_file opts[:db_otu_info]
 assert_file opts[:mask]
 assert_file opts[:db_seqs]
+assert_file opts[:mothur]
+
+assert opts[:threads] > 0,
+       "--threads must be > 0, was %d",
+       opts[:threads]
 
 ######################################################################
 # clean file names for mothur
@@ -262,7 +312,7 @@ end
 
 Time.time_it("Chimera Slayer", logger) do
   # in must be same length as reference
-  cmd = "#{MOTHUR} " +
+  cmd = "#{opts[:mothur]} " +
         "'#chimera.slayer(#{mothur_params})'"
   log_cmd logger, cmd
   Process.run_it! cmd
@@ -271,14 +321,14 @@ end
 Time.time_it("Read slayer chimeras", logger) do
   File.open(slayer_ids).each_line do |line|
     id = line.chomp
-    hash_add chimeric_ids, id, "ChimeraSlayer"
+    chimeric_ids.store_in_array id, "ChimeraSlayer"
 
     logger.debug { "Chimera Slayer flagged #{id}" }
   end
 end
 
 Time.time_it("Uchime", logger) do
-  cmd = "#{MOTHUR} " +
+  cmd = "#{opts[:mothur]} " +
         "'#chimera.uchime(#{mothur_params})'"
   log_cmd logger, cmd
   Process.run_it! cmd
@@ -287,14 +337,14 @@ end
 Time.time_it("Read uchime chimeras", logger) do
   File.open(uchime_ids).each_line do |line|
     id = line.chomp
-    hash_add chimeric_ids, id, "uchime"
+    chimeric_ids.store_in_array id, "uchime"
 
     logger.debug { "Uchime flagged #{id}" }
   end
 end
 
 Time.time_it("Pintail", logger) do
-  cmd = "#{MOTHUR} " +
+  cmd = "#{opts[:mothur]} " +
         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
         "template=#{GOLD_ALN}, " +
         "conservation=#{SILVA_FREQ}, " +
@@ -308,7 +358,7 @@ end
 Time.time_it("Read Pintail chimeras", logger) do
   File.open(pintail_ids).each_line do |line|
     id = line.chomp
-    hash_add chimeric_ids, id, "Pintail"
+    chimeric_ids.store_in_array id, "Pintail"
 
     logger.debug { "Pintail flagged #{id}" }
   end
@@ -350,7 +400,7 @@ Time.time_it("Write masked, combined fasta", logger) do
 end
 
 Time.time_it("Distance", logger) do
-  cmd = "#{MOTHUR} " +
+  cmd = "#{opts[:mothur]} " +
         "'#dist.seqs(fasta=#{cluster_me}, " +
         "outputdir=#{outdir_tmp}, " +
         "output=lt, " +
@@ -361,7 +411,7 @@ Time.time_it("Distance", logger) do
 end
 
 Time.time_it("Cluster", logger) do
-  cmd = "#{MOTHUR} " +
+  cmd = "#{opts[:mothur]} " +
         "'#cluster(phylip=#{cluster_me_dist})'"
 
   log_cmd logger, cmd
@@ -369,7 +419,7 @@ Time.time_it("Cluster", logger) do
 end
 
 Time.time_it("Get OTU list", logger) do
-  cmd = "#{MOTHUR} '#get.otulist(list=#{cluster_me_list})'"
+  cmd = "#{opts[:mothur]} '#get.otulist(list=#{cluster_me_list})'"
   log_cmd logger, cmd
   Process.run_it! cmd
 end
