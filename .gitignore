@@ -4,3 +4,4 @@ formatdb.log
 test_files
 Gemfile.lock
 *logfile
+notes.md
