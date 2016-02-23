@@ -26,3 +26,15 @@ taken to be the sequence ID and must be unique.
 ## TODO ##
 
 - names/counts file for cluster step
+- try symlink instead of copying to sanitize files names
+- change the mothur short param from `-h` to something else
+
+- avg neigh with closest distance to break ties
+- avg neigh with dist weighted abund to break ties
+- furthest neigh
+- no clustering at all, just distance
+- one at a time vs jumble
+
+## Entropy ##
+
+The entropy file

@@ -55,6 +55,10 @@ opts = Trollop.options do
   opt(:mothur, "The mothur executable",
       type: :string,
       default: MOTHUR)
+
+  opt(:cluster_method, "Either furthest, average, or nearest",
+      type: :string,
+      default: "average")
 end
 
 # opts = {
@@ -75,6 +79,13 @@ assert_file opts[:mothur]
 assert opts[:threads] > 0,
        "--threads must be > 0, was %d",
        opts[:threads]
+
+check = %w[furthest average nearest].one? do |opt|
+  opts[:cluster_method] == opt
+end
+assert check,
+       "--cluster-method must be one of furthest, average or " +
+       "nearest"
 
 ######################################################################
 # clean file names for mothur
@@ -143,8 +154,23 @@ pintail_ids = File.join opts[:outdir],
 
 cluster_me = File.join outdir_tmp, "cluster_me.fa"
 cluster_me_dist = File.join outdir_tmp, "cluster_me.phylip.dist"
-cluster_me_list = File.join outdir_tmp, "cluster_me.phylip.an.list"
-otu_file_base = File.join outdir_tmp, "cluster_me.phylip.an.0"
+
+if opts[:cluster_method] == "furthest"
+  method = "fn"
+elsif opts[:cluster_method] == "average"
+  method = "an"
+elsif opts[:cluster_method] == "nearest"
+  method = "nn"
+else
+  assert false, "problem with --cluster-method"
+end
+
+cluster_me_list =
+  File.join outdir_tmp, "cluster_me.phylip.#{method}.list"
+otu_file_base =
+  File.join outdir_tmp, "cluster_me.phylip.#{method}.0"
+
+
 otu_file = ""
 
 otu_calls_f =
@@ -310,69 +336,69 @@ end
 # slay the chimeras
 ###################
 
-Time.time_it("Chimera Slayer", logger) do
-  # in must be same length as reference
-  cmd = "#{opts[:mothur]} " +
-        "'#chimera.slayer(#{mothur_params})'"
-  log_cmd logger, cmd
-  Process.run_it! cmd
-end
+# Time.time_it("Chimera Slayer", logger) do
+#   # in must be same length as reference
+#   cmd = "#{opts[:mothur]} " +
+#         "'#chimera.slayer(#{mothur_params})'"
+#   log_cmd logger, cmd
+#   Process.run_it! cmd
+# end
 
-Time.time_it("Read slayer chimeras", logger) do
-  File.open(slayer_ids).each_line do |line|
-    id = line.chomp
-    chimeric_ids.store_in_array id, "ChimeraSlayer"
+# Time.time_it("Read slayer chimeras", logger) do
+#   File.open(slayer_ids).each_line do |line|
+#     id = line.chomp
+#     chimeric_ids.store_in_array id, "ChimeraSlayer"
 
-    logger.debug { "Chimera Slayer flagged #{id}" }
-  end
-end
+#     logger.debug { "Chimera Slayer flagged #{id}" }
+#   end
+# end
 
-Time.time_it("Uchime", logger) do
-  cmd = "#{opts[:mothur]} " +
-        "'#chimera.uchime(#{mothur_params})'"
-  log_cmd logger, cmd
-  Process.run_it! cmd
-end
+# Time.time_it("Uchime", logger) do
+#   cmd = "#{opts[:mothur]} " +
+#         "'#chimera.uchime(#{mothur_params})'"
+#   log_cmd logger, cmd
+#   Process.run_it! cmd
+# end
 
-Time.time_it("Read uchime chimeras", logger) do
-  File.open(uchime_ids).each_line do |line|
-    id = line.chomp
-    chimeric_ids.store_in_array id, "uchime"
+# Time.time_it("Read uchime chimeras", logger) do
+#   File.open(uchime_ids).each_line do |line|
+#     id = line.chomp
+#     chimeric_ids.store_in_array id, "uchime"
 
-    logger.debug { "Uchime flagged #{id}" }
-  end
-end
+#     logger.debug { "Uchime flagged #{id}" }
+#   end
+# end
 
-Time.time_it("Pintail", logger) do
-  cmd = "#{opts[:mothur]} " +
-        "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
-        "template=#{GOLD_ALN}, " +
-        "conservation=#{SILVA_FREQ}, " +
-        "quantile=#{SILVA_QUAN}, " +
-        "outputdir=#{opts[:outdir]}, " +
-        "processors=#{opts[:threads]})'"
-  log_cmd logger, cmd
-  Process.run_it! cmd
-end
+# Time.time_it("Pintail", logger) do
+#   cmd = "#{opts[:mothur]} " +
+#         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
+#         "template=#{GOLD_ALN}, " +
+#         "conservation=#{SILVA_FREQ}, " +
+#         "quantile=#{SILVA_QUAN}, " +
+#         "outputdir=#{opts[:outdir]}, " +
+#         "processors=#{opts[:threads]})'"
+#   log_cmd logger, cmd
+#   Process.run_it! cmd
+# end
 
-Time.time_it("Read Pintail chimeras", logger) do
-  File.open(pintail_ids).each_line do |line|
-    id = line.chomp
-    chimeric_ids.store_in_array id, "Pintail"
+# Time.time_it("Read Pintail chimeras", logger) do
+#   File.open(pintail_ids).each_line do |line|
+#     id = line.chomp
+#     chimeric_ids.store_in_array id, "Pintail"
 
-    logger.debug { "Pintail flagged #{id}" }
-  end
-end
+#     logger.debug { "Pintail flagged #{id}" }
+#   end
+# end
 
-Time.time_it("Write chimeric seqs", logger) do
-  File.open(chimeric_seqs, "w") do |f|
-    chimeric_ids.sort_by { |k, v| k }.each do |id, software|
-      f.puts [id, software.sort.join(",")].join "\t"
-    end
-  end
+# Time.time_it("Write chimeric seqs", logger) do
+#   File.open(chimeric_seqs, "w") do |f|
+#     chimeric_ids.sort_by { |k, v| k }.each do |id, software|
+#       f.puts [id, software.sort.join(",")].join "\t"
+#     end
+#   end
 
-  logger.info { "Chimeric seqs written to #{chimeric_seqs}" }
-end
+#   logger.info { "Chimeric seqs written to #{chimeric_seqs}" }
+# end
 
 ###################
 # slay the chimeras
@@ -410,9 +436,13 @@ Time.time_it("Distance", logger) do
   Process.run_it! cmd
 end
 
+# warn "EMERGENCY BRAKE ENGAGED!"
+# exit
+
 Time.time_it("Cluster", logger) do
   cmd = "#{opts[:mothur]} " +
-        "'#cluster(phylip=#{cluster_me_dist})'"
+        "'#cluster(phylip=#{cluster_me_dist}, " +
+        "method=#{opts[:cluster_method]})'"
 
   log_cmd logger, cmd
   Process.run_it! cmd
@@ -485,11 +515,11 @@ end
 ##########
 
 Time.time_it("Clean up", logger) do
-  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
-  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
-  FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
-  FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
-  FileUtils.rm_r outdir_tmp
+  # FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
+  # FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
+  # FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
+  # FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+  # FileUtils.rm_r outdir_tmp
   FileUtils.mkdir_p chimera_dir
   FileUtils.mv Dir.glob(chimera_details), chimera_dir
 end

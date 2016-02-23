@@ -3,3 +3,4 @@ bin
 formatdb.log
 test_files
 Gemfile.lock
+*logfile
