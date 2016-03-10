@@ -21,6 +21,10 @@ module Utils
     str.include? "-"
   end
 
+  def clean str
+    str.gsub(/[^\p{Alnum}_]+/, "_").gsub(/_+/, "_")
+  end
+
   def clean_fname str
     str.split(File::SEPARATOR).
       map { |s| s.gsub(/[^\p{Alnum}\.]+/, "_") }.
@@ -77,6 +81,9 @@ module Utils
       if db_otu_info.has_key? id
         db_otu_info[id][:otu]
       else
+        unless input_ids.include? id
+          abort "ERROR: input_ids missing #{id}\n#{input_ids.inspect}"
+        end
         assert_includes input_ids, id
         "USR"
       end
@@ -127,7 +134,7 @@ module Utils
     FastaFile.open(file).each_record do |head, seq|
       assert_seq_len seq, head
 
-      id = head.split(" ").first
+      id = clean head.split(" ").first
 
       refute_includes seq_ids, id
       seq_ids << id
