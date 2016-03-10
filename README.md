@@ -35,6 +35,8 @@ taken to be the sequence ID and must be unique.
 - no clustering at all, just distance
 - one at a time vs jumble
 
+- mothur errors should terminate program
+
 ## Entropy ##
 
 The entropy file

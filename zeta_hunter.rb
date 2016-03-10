@@ -153,7 +153,7 @@ pintail_ids = File.join opts[:outdir],
                        ".pintail.accnos"
 
 cluster_me = File.join outdir_tmp, "cluster_me.fa"
-cluster_me_dist = File.join outdir_tmp, "cluster_me.dist"
+cluster_me_dist = File.join outdir_tmp, "cluster_me.phylip.dist"
 
 if opts[:cluster_method] == "furthest"
   method = "fn"
@@ -429,15 +429,15 @@ Time.time_it("Distance", logger) do
   cmd = "#{opts[:mothur]} " +
         "'#dist.seqs(fasta=#{cluster_me}, " +
         "outputdir=#{outdir_tmp}, " +
-        "output=column, " +
+        "output=lt, " +
         "processors=#{opts[:threads]})'"
 
   log_cmd logger, cmd
   Process.run_it! cmd
 end
 
-warn "EMERGENCY BRAKE ENGAGED!"
-exit
+# warn "EMERGENCY BRAKE ENGAGED!"
+# exit
 
 Time.time_it("Cluster", logger) do
   cmd = "#{opts[:mothur]} " +
