@@ -216,4 +216,13 @@ module Utils
       seqs[head][:degapped] = degapped
     end
   end
+
+  def is_outgroup? db_otu_info, seq_id
+    db_otu_info.has_key?(seq_id) && db_otu_info[seq_id][:otu] == "OG"
+  end
+
+  def emergency_brake!
+    warn "EMERGENCY BRAKE ENGAGED!"
+    exit
+  end
 end
