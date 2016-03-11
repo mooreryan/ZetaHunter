@@ -36,6 +36,7 @@ taken to be the sequence ID and must be unique.
 - one at a time vs jumble
 
 - mothur errors should terminate program
+- clean up the mothur logfiles
 
 ## Entropy ##
 
