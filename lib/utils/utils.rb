@@ -5,6 +5,10 @@ module Utils
   #   Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
   # end
 
+  def remove_all_gaps seq
+    seq.gsub /\p{^Alpha}/, ""
+  end
+
   def log_cmd logger, cmd
     logger.debug "Running: #{cmd}"
   end

@@ -62,6 +62,10 @@ opts = Trollop.options do
       default: "average")
 
   opt(:check_chimera, "Flag to check chimeras", short: "-k")
+
+  opt(:closed_ref, "Method for closed reference part",
+      type: :string,
+      default: "mothur")
 end
 
 # opts = {
@@ -89,6 +93,9 @@ end
 assert check,
        "--cluster-method must be one of furthest, average or " +
        "nearest"
+
+assert opts[:closed_ref] == "mothur" || opts[:closed_ref] == "sortmerna",
+       "--closed-ref must be one of mothur or sortmerna"
 
 ######################################################################
 # clean file names for mothur
@@ -177,7 +184,10 @@ otu_file_base =
 otu_file = ""
 
 otu_calls_f =
-  File.join opts[:outdir], "#{inaln_info[:base]}.otu_calls.txt"
+  File.join opts[:outdir], "#{inaln_info[:base]}.denovo.otu_calls.txt"
+
+final_otu_calls_f =
+  File.join opts[:outdir], "#{inaln_info[:base]}.final.otu_calls.txt"
 
 chimeric_seqs =
   File.join opts[:outdir], "#{inaln_info[:base]}.dangerous_seqs.txt"
@@ -411,6 +421,161 @@ end
 ######################################################################
 
 ######################################################################
+# SortMeRNA distance based closed reference OTU calls
+#####################################################
+
+SORTME_BUILD = "~/software/sortmerna-2.1-linux-64/indexdb_rna"
+SORTMERNA = "~/software/sortmerna-2.1-linux-64/sortmerna"
+input_unaln = File.join opts[:outdir], "input_unaln.fa"
+sortme_blast = File.join opts[:outdir], "input_unaln.sortme_blast"
+
+Time.time_it("Unalign DB seqs if needed", logger) do
+
+
+  File.open(DB_SEQS_UNALN, "w") do |f|
+    FastaFile.open(DB_SEQS).each_record do |head, seq|
+      f.puts ">#{head}"
+      f.puts remove_all_gaps(seq)
+    end
+  end
+
+  logger.debug { "Aligned DB seqs: #{DB_SEQS}" }
+  logger.debug { "Unaligned DB seqs: #{DB_SEQS_UNALN}" }
+end
+
+Time.time_it("Unalign input seqs", logger) do
+  File.open(input_unaln, "w") do |f|
+    input_seqs.each do |head, seq|
+      f.puts ">#{head}"
+      f.puts remove_all_gaps(seq[:orig])
+    end
+  end
+end
+
+# TODO only do this if it doesn't already exist
+Time.time_it("Build SortMeRNA index", logger) do
+  refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
+
+  cmd = "#{SORTME_BUILD} " +
+        "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
+
+  log_cmd logger, cmd
+  Process.run_it! cmd
+end
+
+Time.time_it("SortMeRNA", logger) do
+  cmd = "#{SORTMERNA} " +
+        "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
+        "--reads #{input_unaln} " +
+        "--aligned #{sortme_blast} " +
+        "--blast '1 qcov'"
+
+  # sort me rna adds .blast to the output base
+  sortme_blast += ".blast"
+
+  log_cmd logger, cmd
+  Process.run_it! cmd
+  logger.debug { "SortMeRNA blast: #{sortme_blast}" }
+end
+
+closed_ref_otus = {}
+
+Time.time_it("Read SortMeRNA blast", logger) do
+  File.open(sortme_blast).each_line do |line|
+    user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
+
+    pid = pid.to_f
+    qcov = rest.last.to_f
+
+    if qcov >= MIN_QCOV
+      insert_new_entry =
+        (closed_ref_otus.has_key?(user_seq) &&
+         closed_ref_otus[user_seq][:pid] < pid) ||
+        !closed_ref_otus.has_key?(user_seq)
+
+      if insert_new_entry
+        closed_ref_otus[user_seq] = { hit: db_seq_hit,
+                                      pid: pid,
+                                      qcov: qcov }
+      end
+    end
+  end
+end
+
+closest_seqs =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.closest_db_seqs.txt"
+
+distance_based_otus =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.distance_based_otus.txt"
+
+cluster_these_user_seqs = {}
+closest_to_outgroups = []
+Time.time_it("Write closest ref seqs and OTU calls", logger) do
+  File.open(closest_seqs, "w") do |close_f|
+    File.open(distance_based_otus, "w") do |otu_f|
+      close_f.puts ["#SeqID",
+                   "OTU",
+                   "PercEntropy",
+                   "PercMaskedBases",
+                   "Hit",
+                   "PID",
+                   "QCov"].join "\t"
+
+      otu_f.puts ["#SeqID",
+                   "OTU",
+                   "PercEntropy",
+                   "PercMaskedBases",
+                   "Hit",
+                   "PID",
+                   "QCov"].join "\t"
+
+      closed_ref_otus.each do |user_seq, info|
+        assert_keys masked_input_seq_entropy, user_seq
+
+        perc_total_entropy =
+          masked_input_seq_entropy[user_seq][:perc_total_entropy]
+        perc_bases_in_mask =
+          masked_input_seq_entropy[user_seq][:perc_bases_in_mask]
+
+        close_f.puts [user_seq,
+                      db_otu_info[info[:hit]][:otu],
+                      perc_total_entropy,
+                      perc_bases_in_mask,
+                      info[:hit],
+                      info[:pid],
+                      info[:qcov]].join "\t"
+
+        if info[:pid] < 97.0 # will be clustered later
+          assert input_seqs.has_key? user_seq
+          cluster_these_user_seqs[user_seq] = input_seqs[user_seq]
+          closest_to_outgroups << user_seq
+        else
+
+          otu_f.puts [user_seq,
+                      db_otu_info[info[:hit]][:otu],
+                      perc_total_entropy,
+                      perc_bases_in_mask,
+                      info[:hit],
+                      info[:pid],
+                      info[:qcov]].join "\t"
+        end
+      end
+    end
+  end
+
+  logger.debug { "Closest DB seqs: #{closest_seqs}" }
+  logger.debug { "Distance based OTU calls written " +
+                 "to #{distance_based_otus}" }
+end
+
+#####################################################
+# SortMeRNA distance based closed reference OTU calls
+######################################################################
+
+
+######################################################################
 # cluster
 #########
 
@@ -419,7 +584,7 @@ Time.time_it("Write masked, combined fasta", logger) do
   refute input_seqs.empty?, "Did not find any input seqs"
   refute db_seqs.empty?, "Did not find any DB seqs"
   File.open(cluster_me, "w") do |f|
-    input_seqs.each do |head, seqs|
+    cluster_these_user_seqs.each do |head, seqs|
       f.printf ">%s\n%s\n", head, seqs[:masked]
     end
 
@@ -479,37 +644,81 @@ Time.time_it("Find OTU file", logger) do
   logger.debug { "For OTUs, using #{otu_file}" }
 end
 
-Time.time_it("Assign OTUs", logger) do
+probably_not_zetas_f =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.probably_not_zetas.txt"
+
+Time.time_it("Assign de novo OTUs", logger) do
   # TODO generate good names for new OTUs
-  File.open(otu_calls_f, "w") do |f|
-    f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+  File.open(probably_not_zetas_f, "w") do |nzf|
+    nzf.puts %w[#SeqID DBHit PID].join "\t"
 
-    File.open(otu_file).each_line do |line|
-      otu, id_str = line.chomp.split "\t"
-      ids = id_str.split ","
-      otu_size = ids.count
+    File.open(otu_calls_f, "w") do |f|
+      f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
-      refute otu_size.zero?
-      logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
+      File.open(otu_file).each_line do |line|
+        otu, id_str = line.chomp.split "\t"
+        ids = id_str.split ","
+        otu_size = ids.count
 
-      otu_calls = get_otu_calls ids, db_otu_info, input_ids
-      otu_call_counts = get_otu_call_counts otu_calls
-      otu_call = get_otu_call otu_call_counts
+        refute otu_size.zero?
+        logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
 
-      only_input_ids = ids.select { |id| input_ids.include?(id) }
+        otu_calls = get_otu_calls ids, db_otu_info, input_ids
+        otu_call_counts = get_otu_call_counts otu_calls
+        otu_call = get_otu_call otu_call_counts
 
-      only_input_ids.each do |id|
-        assert_keys masked_input_seq_entropy, id
-        perc_entropy = masked_input_seq_entropy[id]
-        f.puts [id,
-                otu_call,
-                perc_entropy[:perc_total_entropy],
-                perc_entropy[:perc_bases_in_mask],
-                otu_call_counts.inspect].join "\t"
+        only_input_ids = ids.select { |id| input_ids.include?(id) }
+
+        only_input_ids.each do |id|
+          if otu_size == 1 && closest_to_outgroups.include?(id)
+            nzf.puts [id,
+                      closed_ref_otus[id][:hit],
+                      closed_ref_otus[id][:pid]].join "\t"
+
+            logger.debug { "Seq: #{id} is probably not a Zeta" }
+          else
+            assert_keys masked_input_seq_entropy, id
+            perc_entropy = masked_input_seq_entropy[id]
+            f.puts [id,
+                    otu_call,
+                    perc_entropy[:perc_total_entropy],
+                    perc_entropy[:perc_bases_in_mask],
+                    otu_call_counts.inspect].join "\t"
+          end
+        end
       end
     end
   end
-  logger.info { "OTU calls written to #{otu_calls_f}" }
+  logger.info { "seqs that probably are not Zetas: #{probably_not_zetas_f}" }
+  logger.info { "de novo OTU calls written to #{otu_calls_f}" }
+end
+
+Time.time_it("Write final OTU calls", logger) do
+  File.open(final_otu_calls_f, "w") do |f|
+    f.puts ["#SeqID",
+            "OTU",
+            "PercEntropy",
+            "PercMaskedBases"].join "\t"
+
+    File.open(distance_based_otus).each_line do |line|
+      unless line.start_with? "#"
+        seq, otu, ent, masked, *rest = line.chomp.split "\t"
+
+        f.puts [seq, otu, ent, masked].join "\t"
+      end
+    end
+
+    File.open(otu_calls_f).each_line do |line|
+      unless line.start_with? "#"
+        seq, otu, ent, masked, *rest = line.chomp.split "\t"
+
+        f.puts [seq, otu, ent, masked].join "\t"
+      end
+    end
+  end
+
+  logger.info { "Final OTU calls written to #{final_otu_calls_f}" }
 end
 
 ############################
