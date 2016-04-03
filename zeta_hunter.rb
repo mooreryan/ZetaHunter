@@ -730,11 +730,11 @@ end
 ##########
 
 Time.time_it("Clean up", logger) do
-  # FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
-  # FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
-  # FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
-  # FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
-  # FileUtils.rm_r outdir_tmp
+  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
+  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
+  FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
+  FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+  FileUtils.rm_r outdir_tmp
   FileUtils.mkdir_p chimera_dir
   FileUtils.mv Dir.glob(chimera_details), chimera_dir
 end
