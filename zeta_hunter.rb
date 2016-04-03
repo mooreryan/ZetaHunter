@@ -54,11 +54,14 @@ opts = Trollop.options do
 
   opt(:mothur, "The mothur executable",
       type: :string,
-      default: MOTHUR)
+      default: MOTHUR,
+      short: "-r")
 
   opt(:cluster_method, "Either furthest, average, or nearest",
       type: :string,
       default: "average")
+
+  opt(:check_chimera, "Flag to check chimeras", short: "-k")
 end
 
 # opts = {
@@ -335,69 +338,72 @@ end
 ######################################################################
 # slay the chimeras
 ###################
+if opts[:check_chimeras]
 
-# Time.time_it("Chimera Slayer", logger) do
-#   # in must be same length as reference
-#   cmd = "#{opts[:mothur]} " +
-#         "'#chimera.slayer(#{mothur_params})'"
-#   log_cmd logger, cmd
-#   Process.run_it! cmd
-# end
+  # Time.time_it("Chimera Slayer", logger) do
+  #   # in must be same length as reference
+  #   cmd = "#{opts[:mothur]} " +
+  #         "'#chimera.slayer(#{mothur_params})'"
+  #   log_cmd logger, cmd
+  #   Process.run_it! cmd
+  # end
 
-# Time.time_it("Read slayer chimeras", logger) do
-#   File.open(slayer_ids).each_line do |line|
-#     id = line.chomp
-#     chimeric_ids.store_in_array id, "ChimeraSlayer"
+  # Time.time_it("Read slayer chimeras", logger) do
+  #   File.open(slayer_ids).each_line do |line|
+  #     id = line.chomp
+  #     chimeric_ids.store_in_array id, "ChimeraSlayer"
 
-#     logger.debug { "Chimera Slayer flagged #{id}" }
-#   end
-# end
+  #     logger.debug { "Chimera Slayer flagged #{id}" }
+  #   end
+  # end
 
-Time.time_it("Uchime", logger) do
-  cmd = "#{opts[:mothur]} " +
-        "'#chimera.uchime(#{mothur_params})'"
-  log_cmd logger, cmd
-  Process.run_it! cmd
-end
-
-Time.time_it("Read uchime chimeras", logger) do
-  File.open(uchime_ids).each_line do |line|
-    id = line.chomp
-    chimeric_ids.store_in_array id, "uchime"
-
-    logger.debug { "Uchime flagged #{id}" }
+  Time.time_it("Uchime", logger) do
+    cmd = "#{opts[:mothur]} " +
+          "'#chimera.uchime(#{mothur_params})'"
+    log_cmd logger, cmd
+    Process.run_it! cmd
   end
-end
 
-# Time.time_it("Pintail", logger) do
-#   cmd = "#{opts[:mothur]} " +
-#         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
-#         "template=#{GOLD_ALN}, " +
-#         "conservation=#{SILVA_FREQ}, " +
-#         "quantile=#{SILVA_QUAN}, " +
-#         "outputdir=#{opts[:outdir]}, " +
-#         "processors=#{opts[:threads]})'"
-#   log_cmd logger, cmd
-#   Process.run_it! cmd
-# end
+  Time.time_it("Read uchime chimeras", logger) do
+    File.open(uchime_ids).each_line do |line|
+      id = line.chomp
+      chimeric_ids.store_in_array id, "uchime"
 
-# Time.time_it("Read Pintail chimeras", logger) do
-#   File.open(pintail_ids).each_line do |line|
-#     id = line.chomp
-#     chimeric_ids.store_in_array id, "Pintail"
-
-#     logger.debug { "Pintail flagged #{id}" }
-#   end
-# end
-
-Time.time_it("Write chimeric seqs", logger) do
-  File.open(chimeric_seqs, "w") do |f|
-    chimeric_ids.sort_by { |k, v| k }.each do |id, software|
-      f.puts [id, software.sort.join(",")].join "\t"
+      logger.debug { "Uchime flagged #{id}" }
     end
   end
 
-  logger.info { "Chimeric seqs written to #{chimeric_seqs}" }
+
+  # Time.time_it("Pintail", logger) do
+  #   cmd = "#{opts[:mothur]} " +
+  #         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
+  #         "template=#{GOLD_ALN}, " +
+  #         "conservation=#{SILVA_FREQ}, " +
+  #         "quantile=#{SILVA_QUAN}, " +
+  #         "outputdir=#{opts[:outdir]}, " +
+  #         "processors=#{opts[:threads]})'"
+  #   log_cmd logger, cmd
+  #   Process.run_it! cmd
+  # end
+
+  # Time.time_it("Read Pintail chimeras", logger) do
+  #   File.open(pintail_ids).each_line do |line|
+  #     id = line.chomp
+  #     chimeric_ids.store_in_array id, "Pintail"
+
+  #     logger.debug { "Pintail flagged #{id}" }
+  #   end
+  # end
+
+  Time.time_it("Write chimeric seqs", logger) do
+    File.open(chimeric_seqs, "w") do |f|
+      chimeric_ids.sort_by { |k, v| k }.each do |id, software|
+        f.puts [id, software.sort.join(",")].join "\t"
+      end
+    end
+
+    logger.info { "Chimeric seqs written to #{chimeric_seqs}" }
+  end
 end
 
 ###################
