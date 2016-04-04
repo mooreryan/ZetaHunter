@@ -1,4 +1,5 @@
 require "spec_helper"
+require "fileutils"
 
 describe CoreExtensions::File do
   File.extend CoreExtensions::File
@@ -9,6 +10,23 @@ describe CoreExtensions::File do
   let(:dir) { File.join "home", "moorer" }
   let(:base) { "apples.txt" }
   let(:ext) { ".gz" }
+
+  let(:test_f_dir) do
+    File.absolute_path(File.join(File.dirname(__FILE__),
+                                 "..", "..",
+                                 "test_files"))
+  end
+
+  let(:bad_fname) do
+    File.absolute_path(File.join(test_f_dir,
+                                 "bad-dir-name",
+                                 "bad--fnam es.txt"))
+  end
+
+  let(:clean_fname) do
+    File.join test_f_dir, "bad_dir_name", "bad_fnam_es.txt"
+  end
+
 
   describe CoreExtensions::File::Filename do
     it { should be_a Struct }
@@ -26,5 +44,32 @@ describe CoreExtensions::File do
       expect(File.parse_fname fname).
         to be_a CoreExtensions::File::Filename
     end
+  end
+
+  describe "#clean_fname" do
+    it "cleans the file name" do
+      str = "/Users/moorer/ap38*02.9-_;>46.txt"
+      expect(File.clean_fname str).to eq "/Users/moorer/ap38_02.9_46.txt"
+    end
+  end
+
+  describe "::clean_and_copy" do
+    it "cleans the file name" do
+      expect(File.clean_and_copy bad_fname).
+        to eq clean_fname
+    end
+
+    it "makes a copy of the file in new clean file name" do
+      # remove clean_fname in case it is still present
+      FileUtils.rm clean_fname
+
+      File.clean_and_copy bad_fname
+
+      old_contents = File.read bad_fname
+      new_contents = File.read clean_fname
+
+      expect(new_contents).to eq old_contents
+    end
+
   end
 end

@@ -35,13 +35,6 @@ describe Utils do
     end
   end
 
-  describe "#clean_fname" do
-    it "cleans the file name" do
-      str = "/Users/moorer/ap38*02.9-_;>46.txt"
-      expect(klass.clean_fname str).to eq "/Users/moorer/ap38_02.9_46.txt"
-    end
-  end
-
   describe "#gap?" do
     context "the character is an A C T G U or N (case insensitive)" do
       it "returns nil" do

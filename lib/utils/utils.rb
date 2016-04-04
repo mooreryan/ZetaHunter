@@ -29,12 +29,6 @@ module Utils
     str.gsub(/[^\p{Alnum}_]+/, "_").gsub(/_+/, "_")
   end
 
-  def clean_fname str
-    str.split(File::SEPARATOR).
-      map { |s| s.gsub(/[^\p{Alnum}\.]+/, "_") }.
-      join(File::SEPARATOR)
-  end
-
   def gap? base
     base.match /[^ACTGUN]/i
   end

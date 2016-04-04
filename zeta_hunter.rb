@@ -101,29 +101,12 @@ assert opts[:closed_ref] == "mothur" || opts[:closed_ref] == "sortmerna",
 # clean file names for mothur
 #############################
 
-infiles = [opts[:inaln], opts[:db_otu_info], opts[:mask], opts[:db_seqs]]
-new_fnames = infiles.map do |fname|
-  new_fname = clean_fname fname
-  new_dirname = File.dirname new_fname
+opts[:inaln]       = File.clean_and_copy opts[:inaln]
+opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
+opts[:mask]        = File.clean_and_copy opts[:mask]
+opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
 
-  unless new_fname == fname
-    title = "Creating directory #{new_dirname} if it does not exist"
-    Time.time_it(title, logger) do
-      FileUtils.mkdir_p new_dirname
-    end
-
-    Time.time_it("Copying #{fname} to #{new_fname}", logger) do
-      FileUtils.cp fname, new_fname
-    end
-
-    assert_file new_fname
-  end
-
-  new_fname
-end
-opts[:inaln], opts[:db_otu_info], opts[:mask], opts[:db_seqs] = new_fnames
-
-opts[:outdir] = clean_fname opts[:outdir]
+opts[:outdir] = File.clean_fname opts[:outdir]
 
 #############################
 # clean file names for mothur
@@ -648,48 +631,57 @@ probably_not_zetas_f =
   File.join opts[:outdir],
             "#{inaln_info[:base]}.probably_not_zetas.txt"
 
+possibly_not_zetas_f =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.possibly_not_zetas.txt"
+
 Time.time_it("Assign de novo OTUs", logger) do
   # TODO generate good names for new OTUs
-  File.open(probably_not_zetas_f, "w") do |nzf|
-    nzf.puts %w[#SeqID DBHit PID].join "\t"
+  File.open(possibly_not_zetas_f, "w") do |pnzf|
+    pnzf.puts %w[#SeqID DBHit PID].join "\t"
+    File.open(probably_not_zetas_f, "w") do |nzf|
+      nzf.puts %w[#SeqID DBHit PID].join "\t"
 
-    File.open(otu_calls_f, "w") do |f|
-      f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+      File.open(otu_calls_f, "w") do |f|
+        f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
-      File.open(otu_file).each_line do |line|
-        otu, id_str = line.chomp.split "\t"
-        ids = id_str.split ","
-        otu_size = ids.count
+        File.open(otu_file).each_line do |line|
+          otu, id_str = line.chomp.split "\t"
+          ids = id_str.split ","
+          otu_size = ids.count
 
-        refute otu_size.zero?
-        logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
+          refute otu_size.zero?
+          logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
 
-        otu_calls = get_otu_calls ids, db_otu_info, input_ids
-        otu_call_counts = get_otu_call_counts otu_calls
-        otu_call = get_otu_call otu_call_counts
+          otu_calls = get_otu_calls ids, db_otu_info, input_ids
 
-        only_input_ids = ids.select { |id| input_ids.include?(id) }
+          otu_call_counts = get_otu_call_counts otu_calls
+          otu_call = get_otu_call otu_call_counts
 
-        only_input_ids.each do |id|
-          if otu_size == 1 && closest_to_outgroups.include?(id)
-            nzf.puts [id,
-                      closed_ref_otus[id][:hit],
-                      closed_ref_otus[id][:pid]].join "\t"
+          only_input_ids = ids.select { |id| input_ids.include?(id) }
 
-            logger.debug { "Seq: #{id} is probably not a Zeta" }
-          else
-            assert_keys masked_input_seq_entropy, id
-            perc_entropy = masked_input_seq_entropy[id]
-            f.puts [id,
-                    otu_call,
-                    perc_entropy[:perc_total_entropy],
-                    perc_entropy[:perc_bases_in_mask],
-                    otu_call_counts.inspect].join "\t"
+          only_input_ids.each do |id|
+            if otu_size == 1 && closest_to_outgroups.include?(id)
+              nzf.puts [id,
+                        closed_ref_otus[id][:hit],
+                        closed_ref_otus[id][:pid]].join "\t"
+
+              logger.info { "Seq: #{id} is probably not a Zeta" }
+            else
+              assert_keys masked_input_seq_entropy, id
+              perc_entropy = masked_input_seq_entropy[id]
+              f.puts [id,
+                      otu_call,
+                      perc_entropy[:perc_total_entropy],
+                      perc_entropy[:perc_bases_in_mask],
+                      otu_call_counts.inspect].join "\t"
+            end
           end
         end
       end
     end
   end
+
   logger.info { "seqs that probably are not Zetas: #{probably_not_zetas_f}" }
   logger.info { "de novo OTU calls written to #{otu_calls_f}" }
 end

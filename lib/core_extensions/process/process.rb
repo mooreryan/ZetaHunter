@@ -1,4 +1,7 @@
 require "systemu"
+require "abort_if"
+
+include AbortIf
 
 module CoreExtensions
   module Process
@@ -14,10 +17,10 @@ module CoreExtensions
     def run_it! *a, &b
       exit_status = self.run_it *a, &b
 
-      unless exit_status.zero?
-        abort "ERROR: non-zero exit status (#{exit_status}) " +
-              "from #{caller}"
-      end
+      abort_unless exit_status.zero?,
+                   "ERROR: non-zero exit status (#{exit_status})"
+
+      exit_status
     end
   end
 end
