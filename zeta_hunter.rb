@@ -428,7 +428,7 @@ end
 Time.time_it("Build SortMeRNA index", logger) do
   refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
 
-  cmd = "#{SORTME_BUILD} " +
+  cmd = "#{opts[:sortme_build]} " +
         "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
 
   log_cmd logger, cmd
@@ -436,7 +436,7 @@ Time.time_it("Build SortMeRNA index", logger) do
 end
 
 Time.time_it("SortMeRNA", logger) do
-  cmd = "#{SORTMERNA} " +
+  cmd = "#{opts[:sortmerna]} " +
         "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
         "--reads #{input_unaln} " +
         "--aligned #{sortme_blast} " +
