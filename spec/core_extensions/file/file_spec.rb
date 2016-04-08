@@ -3,7 +3,7 @@ require "fileutils"
 
 describe CoreExtensions::File do
   File.extend CoreExtensions::File
-
+  let(:klass) { Class.new { extend CoreExtensions::File } }
   let(:filename) { CoreExtensions::File::Filename.new dir, base, ext }
 
   let(:fname) { File.join "home", "moorer", "apples.txt.gz" }
@@ -26,6 +26,12 @@ describe CoreExtensions::File do
   let(:clean_fname) do
     File.join test_f_dir, "bad_dir_name", "bad_fnam_es.txt"
   end
+
+  let(:entropy) { [0.5, 1.3, 1.0, 1.1] }
+  let(:entropy_f) { File.join test_f_dir, "entropy.test.txt" }
+
+  let(:names) { Set.new %w[Ryan Dan] }
+  let(:names_f) { File.join test_f_dir, "names.test.txt" }
 
 
   describe CoreExtensions::File::Filename do
@@ -53,7 +59,7 @@ describe CoreExtensions::File do
     end
   end
 
-  describe "::clean_and_copy" do
+  describe "clean_and_copy" do
     it "cleans the file name" do
       expect(File.clean_and_copy bad_fname).
         to eq clean_fname
@@ -70,6 +76,23 @@ describe CoreExtensions::File do
 
       expect(new_contents).to eq old_contents
     end
+  end
 
+  describe "read_entropy" do
+    context "with good input" do
+      it "returns an array with entropy values" do
+        expect(klass.read_entropy entropy_f).to eq entropy
+      end
+    end
+
+    context "with bad input" do
+      it "raises AbortIf::Exit"
+    end
+  end
+
+  describe "to_set" do
+    it "reads contents of file to set" do
+      expect(klass.to_set names_f).to eq names
+    end
   end
 end

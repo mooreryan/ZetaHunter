@@ -55,4 +55,22 @@ describe Utils do
       end
     end
   end
+
+  describe "#get_cluster_method" do
+    context "with good input" do
+      it "returns file ext for cluster method" do
+        results = [klass.get_cluster_method("furthest"),
+                   klass.get_cluster_method("average"),
+                   klass.get_cluster_method("nearest"),]
+        expect(results).to eq ["fn", "an", "nn"]
+      end
+    end
+
+    context "with bad input" do
+      it "raises AbortIf::Exit" do
+        expect{klass.get_cluster_method "apple"}.
+          to raise_error AbortIf::Exit
+      end
+    end
+  end
 end

@@ -223,4 +223,17 @@ module Utils
     warn "EMERGENCY BRAKE ENGAGED!"
     exit
   end
+
+  def get_cluster_method method
+    if method == "furthest"
+      return "fn"
+    elsif method == "average"
+      return "an"
+    elsif method == "nearest"
+      return "nn"
+    else
+      abort_if true, "--cluster-method must be one of furthest, " +
+                      "average, or nearest. Got: #{method}"
+    end
+  end
 end

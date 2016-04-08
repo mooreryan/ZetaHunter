@@ -1,8 +1,9 @@
 require_relative File.join "lib", "lib_helper.rb"
 
 include Const
-include Assert
 include Utils
+include Assert
+include AbortIf
 
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
@@ -17,7 +18,11 @@ this_dir = File.dirname(__FILE__)
 require "trollop"
 
 opts = Trollop.options do
+  version VERSION_BANNER
+
   banner <<-EOS
+
+#{VERSION_BANNER}
 
   Hunt them Zetas!
 
@@ -57,6 +62,14 @@ opts = Trollop.options do
       default: MOTHUR,
       short: "-r")
 
+  opt(:sortmerna, "The SortMeRNA executable",
+      type: :string,
+      default: SORTMERNA)
+
+  opt(:sortme_build, "The SortMeRNA idnexdb_rna executable",
+      type: :string,
+      default: SORTME_BUILD)
+
   opt(:cluster_method, "Either furthest, average, or nearest",
       type: :string,
       default: "average")
@@ -68,20 +81,14 @@ opts = Trollop.options do
       default: "mothur")
 end
 
-# opts = {
-#   inaln: TEST_ALN,
-#   outdir: TEST_OUTDIR,
-#   threads: 2,
-#   db_otu_info: DB_OTU_INFO,
-#   mask: MASK,
-#   db_seqs: DB_SEQS,
-# }
-
 assert_file opts[:inaln]
 assert_file opts[:db_otu_info]
 assert_file opts[:mask]
 assert_file opts[:db_seqs]
 assert_file opts[:mothur]
+assert_file opts[:sortmerna]
+assert_file opts[:sortme_build]
+
 
 assert opts[:threads] > 0,
        "--threads must be > 0, was %d",
@@ -148,21 +155,12 @@ pintail_ids = File.join opts[:outdir],
 cluster_me = File.join outdir_tmp, "cluster_me.fa"
 cluster_me_dist = File.join outdir_tmp, "cluster_me.phylip.dist"
 
-if opts[:cluster_method] == "furthest"
-  method = "fn"
-elsif opts[:cluster_method] == "average"
-  method = "an"
-elsif opts[:cluster_method] == "nearest"
-  method = "nn"
-else
-  assert false, "problem with --cluster-method"
-end
+method = get_cluster_method opts[:cluster_method]
 
 cluster_me_list =
   File.join outdir_tmp, "cluster_me.phylip.#{method}.list"
 otu_file_base =
   File.join outdir_tmp, "cluster_me.phylip.#{method}.0"
-
 
 otu_file = ""
 
@@ -174,6 +172,16 @@ final_otu_calls_f =
 
 chimeric_seqs =
   File.join opts[:outdir], "#{inaln_info[:base]}.dangerous_seqs.txt"
+
+input_unaln = File.join opts[:outdir], "input_unaln.fa"
+sortme_blast = File.join opts[:outdir], "input_unaln.sortme_blast"
+closest_seqs =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.closest_db_seqs.txt"
+
+distance_based_otus =
+  File.join opts[:outdir],
+            "#{inaln_info[:base]}.distance_based_otus.txt"
 
 ######################################################################
 # FOR TEST ONLY -- remove outdir before running
@@ -190,12 +198,12 @@ Process.run_it cmd
 # FOR TEST ONLY -- remove outdir before running
 ######################################################################
 
-
-
-
 # containers
 
 chimeric_ids             = {}
+closed_ref_otus          = {}
+closest_to_outgroups     = []
+cluster_these_user_seqs  = {}
 db_otu_info              = {}
 db_seq_ids               = Set.new
 db_seqs                  = {}
@@ -208,7 +216,6 @@ masked_input_seq_entropy = {}
 outgroup_names           = Set.new
 otu_info                 = []
 total_entropy            = 0
-
 
 # mothur params
 mothur_params = "fasta=#{opts[:inaln]}, " +
@@ -243,19 +250,7 @@ end
 ####################
 
 Time.time_it("Read entropy info", logger) do
-  File.open(ENTROPY).each_line do |line|
-    idx, ent = line.chomp.split "\t"
-    assert !idx.nil? && !idx.empty?
-    assert !ent.nil? && !ent.empty?
-
-    entropy[idx.to_i] = ent.to_f
-  end
-
-  assert entropy.count == MASK_LEN,
-         "Entropy count was %d should be %d",
-         entropy.count,
-         MASK_LEN
-
+  entropy = File.read_entropy ENTROPY
   total_entropy = entropy.reduce(:+)
 end
 
@@ -279,9 +274,7 @@ Time.time_it("Update shared gap posns with db seqs", logger) do
 end
 
 Time.time_it("Read outgroups", logger) do
-  File.open(OUTGROUPS).each_line do |line|
-    outgroup_names << line.chomp
-  end
+  outgroup_names = File.to_set OUTGROUPS
 end
 
 ####################
@@ -407,10 +400,6 @@ end
 # SortMeRNA distance based closed reference OTU calls
 #####################################################
 
-SORTME_BUILD = "~/software/sortmerna-2.1-linux-64/indexdb_rna"
-SORTMERNA = "~/software/sortmerna-2.1-linux-64/sortmerna"
-input_unaln = File.join opts[:outdir], "input_unaln.fa"
-sortme_blast = File.join opts[:outdir], "input_unaln.sortme_blast"
 
 Time.time_it("Unalign DB seqs if needed", logger) do
 
@@ -461,8 +450,6 @@ Time.time_it("SortMeRNA", logger) do
   logger.debug { "SortMeRNA blast: #{sortme_blast}" }
 end
 
-closed_ref_otus = {}
-
 Time.time_it("Read SortMeRNA blast", logger) do
   File.open(sortme_blast).each_line do |line|
     user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
@@ -485,16 +472,6 @@ Time.time_it("Read SortMeRNA blast", logger) do
   end
 end
 
-closest_seqs =
-  File.join opts[:outdir],
-            "#{inaln_info[:base]}.closest_db_seqs.txt"
-
-distance_based_otus =
-  File.join opts[:outdir],
-            "#{inaln_info[:base]}.distance_based_otus.txt"
-
-cluster_these_user_seqs = {}
-closest_to_outgroups = []
 Time.time_it("Write closest ref seqs and OTU calls", logger) do
   File.open(closest_seqs, "w") do |close_f|
     File.open(distance_based_otus, "w") do |otu_f|

@@ -1,4 +1,17 @@
+require_relative "../version"
+
 module Const
+  COPYRIGHT = "2016 Ryan Moore"
+  CONTACT   = "moorer@udel.edu"
+  WEBSITE   = "https://github.com/mooreryan/ZetaHunter"
+  LICENSE   = "GPLv3"
+
+  VERSION_BANNER = "  # Version: #{Object::ZetaHunter::VERSION}
+  # Copyright #{COPYRIGHT}
+  # Contact: #{CONTACT}
+  # Website: #{WEBSITE}
+  # License: #{LICENSE}"
+
   # directories
   this_dir          = File.dirname(__FILE__)
   PROJ_DIR          = File.absolute_path File.join this_dir, "..", ".."
@@ -12,8 +25,10 @@ module Const
   ENTROPY_DIR       = File.join ASSETS_DIR, "db_mask_entropy"
 
   # binaries
-  MOTHUR          = File.join BIN_DIR, "osx", "mothur", "mothur"
+  MOTHUR          = "#{Dir.home}/software/mothur/mothur"
   REMOVE_ALL_GAPS = File.join BIN_DIR, "remove_gaps.rb"
+  SORTME_BUILD    = "#{Dir.home}/software/sortmerna-2.1-linux-64/indexdb_rna"
+  SORTMERNA       = "#{Dir.home}/software/sortmerna-2.1-linux-64/sortmerna"
 
   # assets
   GOLD_ALN      = File.join ASSETS_DIR, "silva.gold.align"
@@ -26,7 +41,6 @@ module Const
   OUTGROUPS     = File.join ASSETS_DIR, "outgroup_names.txt"
   ENTROPY       = File.join ENTROPY_DIR, "entropy.txt"
   SORTMERNA_IDX = File.join SORTMERNA_IDX_DIR, "db_seqs.unaln.idx"
-
   # test files
   TEST_ALN = File.join TEST_DIR, "full_and_part.fa"
   # TEST_ALN = "/Users/moorer/projects/ZetaHunter3000/test_files/zetas_arb-silva.de_2016-02-15_id318609/zetas.arb-silva.de_2016-02-15_id318609.fasta"
