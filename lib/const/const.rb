@@ -1,3 +1,5 @@
+require "abort_if"
+require "os"
 require_relative "../version"
 
 module Const
@@ -15,7 +17,6 @@ module Const
   # directories
   this_dir          = File.dirname(__FILE__)
   PROJ_DIR          = File.absolute_path File.join this_dir, "..", ".."
-  BIN_DIR           = File.join PROJ_DIR, "bin"
   LIB_DIR           = File.join PROJ_DIR, "lib"
   ASSETS_DIR        = File.join PROJ_DIR, "assets"
   SORTMERNA_IDX_DIR = File.join ASSETS_DIR, "db_seqs_sortmerna_idx"
@@ -24,11 +25,19 @@ module Const
   # TEST_OUTDIR = "/Users/moorer/projects/ZetaHunter3000/test_files/zetas_arb-silva.de_2016-02-15_id318609/outdir"
   ENTROPY_DIR       = File.join ASSETS_DIR, "db_mask_entropy"
 
+  if OS.mac?
+    BIN_DIR = File.join PROJ_DIR, "bin", "mac"
+  elsif OS.linux?
+    BIN_DIR = File.join PROJ_DIR, "bin", "linux"
+  else
+    abort_if true, "OS is neither Mac or Linux...use the Docker " +
+                   "image instead."
+  end
+
   # binaries
-  MOTHUR          = "#{Dir.home}/software/mothur/mothur"
-  REMOVE_ALL_GAPS = File.join BIN_DIR, "remove_gaps.rb"
-  SORTME_BUILD    = "#{Dir.home}/software/sortmerna-2.1-linux-64/indexdb_rna"
-  SORTMERNA       = "#{Dir.home}/software/sortmerna-2.1-linux-64/sortmerna"
+  INDEXDB_RNA     = File.join BIN_DIR, "indexdb_rna"
+  MOTHUR          = File.join BIN_DIR, "mothur"
+  SORTMERNA       = File.join BIN_DIR, "sortmerna"
 
   # assets
   GOLD_ALN      = File.join ASSETS_DIR, "silva.gold.align"

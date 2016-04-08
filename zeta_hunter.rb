@@ -66,9 +66,9 @@ opts = Trollop.options do
       type: :string,
       default: SORTMERNA)
 
-  opt(:sortme_build, "The SortMeRNA idnexdb_rna executable",
+  opt(:indexdb_rna, "The SortMeRNA idnexdb_rna executable",
       type: :string,
-      default: SORTME_BUILD)
+      default: INDEXDB_RNA)
 
   opt(:cluster_method, "Either furthest, average, or nearest",
       type: :string,
@@ -87,7 +87,7 @@ assert_file opts[:mask]
 assert_file opts[:db_seqs]
 assert_file opts[:mothur]
 assert_file opts[:sortmerna]
-assert_file opts[:sortme_build]
+assert_file opts[:indexdb_rna]
 
 
 assert opts[:threads] > 0,
@@ -298,12 +298,6 @@ end
 # degap & mask
 ######################################################################
 
-# Time.time_it("Remove all gaps", logger) do
-#   cmd = "ruby #{REMOVE_ALL_GAPS} #{opts[:inaln]} > #{inaln_nogaps}"
-#   log_cmd logger, cmd
-#   Process.run_it! cmd
-# end
-
 ######################################################################
 # entropy for masked seqs
 #########################
@@ -428,7 +422,7 @@ end
 Time.time_it("Build SortMeRNA index", logger) do
   refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
 
-  cmd = "#{opts[:sortme_build]} " +
+  cmd = "#{opts[:indexdb_rna]} " +
         "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
 
   log_cmd logger, cmd

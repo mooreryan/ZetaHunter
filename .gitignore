@@ -1,8 +1,8 @@
 assets/*
-bin
 formatdb.log
 test_files
 Gemfile.lock
 *logfile
 notes.md
 .ruby-*
+my_bin
