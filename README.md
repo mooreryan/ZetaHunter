@@ -27,10 +27,10 @@ taken to be the sequence ID and must be unique.
 
 - names/counts file for cluster step
 - try symlink instead of copying to sanitize files names
-- change the mothur short param from `-h` to something else
 
 - mothur errors should terminate program
-- clean up the mothur logfiles
+
+- check ALL infiles
 
 ## Entropy ##
 
