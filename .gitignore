@@ -1,6 +1,6 @@
 assets/*
 formatdb.log
-test_files
+zh_test_files
 Gemfile.lock
 *logfile
 notes.md
