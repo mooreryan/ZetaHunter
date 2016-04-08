@@ -23,9 +23,8 @@ describe CoreExtensions::File do
                                  "bad--fnam es.txt"))
   end
 
-  let(:clean_fname) do
-    File.join test_f_dir, "bad_dir_name", "bad_fnam_es.txt"
-  end
+  let(:clean_dir) { File.join test_f_dir, "bad_dir_name" }
+  let(:clean_fname) { File.join clean_dir, "bad_fnam_es.txt" }
 
   let(:entropy) { [0.5, 1.3, 1.0, 1.1] }
   let(:entropy_f) { File.join test_f_dir, "entropy.test.txt" }
@@ -61,13 +60,17 @@ describe CoreExtensions::File do
 
   describe "clean_and_copy" do
     it "cleans the file name" do
+      FileUtils.rm clean_fname if File.exists? clean_fname
+
       expect(File.clean_and_copy bad_fname).
         to eq clean_fname
+
+      FileUtils.rm clean_fname
+      FileUtils.rmdir clean_dir
     end
 
     it "makes a copy of the file in new clean file name" do
-      # remove clean_fname in case it is still present
-      FileUtils.rm clean_fname
+      FileUtils.rm clean_fname if File.exists? clean_fname
 
       File.clean_and_copy bad_fname
 
@@ -75,6 +78,9 @@ describe CoreExtensions::File do
       new_contents = File.read clean_fname
 
       expect(new_contents).to eq old_contents
+
+      FileUtils.rm clean_fname
+      FileUtils.rmdir clean_dir
     end
   end
 
