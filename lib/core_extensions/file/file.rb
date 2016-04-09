@@ -34,7 +34,7 @@ module CoreExtensions
 
     def read_entropy fname
       entropy = []
-      Object::File.open(fname).each_line do |line|
+      Object::File.open(fname, "rt").each_line do |line|
         idx, ent = line.chomp.split "\t"
         # assert !idx.nil? && !idx.empty?
         # assert !ent.nil? && !ent.empty?
@@ -52,7 +52,7 @@ module CoreExtensions
 
     def to_set fname
       lines = []
-      Object::File.open(fname).each_line do |line|
+      Object::File.open(fname, "rt").each_line do |line|
         lines << line.chomp
       end
 

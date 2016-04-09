@@ -129,7 +129,7 @@ module Utils
   end
 
   def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
-    FastaFile.open(file).each_record do |head, seq|
+    FastaFile.open(file, "rt").each_record do |head, seq|
       assert_seq_len seq, head
 
       id = clean head.split(" ").first
@@ -149,7 +149,7 @@ module Utils
   def read_mask fname
     mask_positions = []
 
-    FastaFile.open(fname).each_record do |head, seq|
+    FastaFile.open(fname, "rt").each_record do |head, seq|
       assert_seq_len seq, "Mask"
 
       refute seq.match(/[^-*~\.]/), "Improper characters in the mask"
@@ -165,7 +165,7 @@ module Utils
   def read_otu_metadata fname
     db_otu_info = {}
 
-    File.open(fname).each_line do |line|
+    File.open(fname, "rt").each_line do |line|
       unless line.start_with? "#"
         acc, otu, clone, num = line.chomp.split "\t"
 

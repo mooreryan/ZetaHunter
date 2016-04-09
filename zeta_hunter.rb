@@ -330,7 +330,7 @@ if opts[:check_chimeras]
   # end
 
   # Time.time_it("Read slayer chimeras", logger) do
-  #   File.open(slayer_ids).each_line do |line|
+  #   File.open(slayer_ids, "rt").each_line do |line|
   #     id = line.chomp
   #     chimeric_ids.store_in_array id, "ChimeraSlayer"
 
@@ -346,7 +346,7 @@ if opts[:check_chimeras]
   end
 
   Time.time_it("Read uchime chimeras", logger) do
-    File.open(uchime_ids).each_line do |line|
+    File.open(uchime_ids, "rt").each_line do |line|
       id = line.chomp
       chimeric_ids.store_in_array id, "uchime"
 
@@ -368,7 +368,7 @@ if opts[:check_chimeras]
   # end
 
   # Time.time_it("Read Pintail chimeras", logger) do
-  #   File.open(pintail_ids).each_line do |line|
+  #   File.open(pintail_ids, "rt").each_line do |line|
   #     id = line.chomp
   #     chimeric_ids.store_in_array id, "Pintail"
 
@@ -400,7 +400,7 @@ Time.time_it("Unalign DB seqs if needed", logger) do
 
 
   File.open(DB_SEQS_UNALN, "w") do |f|
-    FastaFile.open(DB_SEQS).each_record do |head, seq|
+    FastaFile.open(DB_SEQS, "rt").each_record do |head, seq|
       f.puts ">#{head}"
       f.puts remove_all_gaps(seq)
     end
@@ -446,7 +446,7 @@ Time.time_it("SortMeRNA", logger) do
 end
 
 Time.time_it("Read SortMeRNA blast", logger) do
-  File.open(sortme_blast).each_line do |line|
+  File.open(sortme_blast, "rt").each_line do |line|
     user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
 
     pid = pid.to_f
@@ -617,7 +617,7 @@ Time.time_it("Assign de novo OTUs", logger) do
       File.open(otu_calls_f, "w") do |f|
         f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
-        File.open(otu_file).each_line do |line|
+        File.open(otu_file, "rt").each_line do |line|
           otu, id_str = line.chomp.split "\t"
           ids = id_str.split ","
           otu_size = ids.count
@@ -665,7 +665,7 @@ Time.time_it("Write final OTU calls", logger) do
             "PercEntropy",
             "PercMaskedBases"].join "\t"
 
-    File.open(distance_based_otus).each_line do |line|
+    File.open(distance_based_otus, "rt").each_line do |line|
       unless line.start_with? "#"
         seq, otu, ent, masked, *rest = line.chomp.split "\t"
 
@@ -673,7 +673,7 @@ Time.time_it("Write final OTU calls", logger) do
       end
     end
 
-    File.open(otu_calls_f).each_line do |line|
+    File.open(otu_calls_f, "rt").each_line do |line|
       unless line.start_with? "#"
         seq, otu, ent, masked, *rest = line.chomp.split "\t"
 
