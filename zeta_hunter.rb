@@ -74,7 +74,8 @@ opts = Trollop.options do
       type: :string,
       default: "average")
 
-  opt(:check_chimera, "Flag to check chimeras", short: "-k")
+  opt(:check_chimeras, "Flag to check chimeras", short: "-k",
+      default: true)
 
   opt(:closed_ref, "Method for closed reference part",
       type: :string,

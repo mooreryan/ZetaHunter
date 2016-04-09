@@ -20,7 +20,7 @@ module Const
   LIB_DIR           = File.join PROJ_DIR, "lib"
   ASSETS_DIR        = File.join PROJ_DIR, "assets"
   SORTMERNA_IDX_DIR = File.join ASSETS_DIR, "db_seqs_sortmerna_idx"
-  TEST_DIR          = File.join PROJ_DIR, "test_files"
+  TEST_DIR          = File.join PROJ_DIR, "zh_test_files"
   TEST_OUTDIR       = File.join TEST_DIR, "full_and_part_output"
   # TEST_OUTDIR = "/Users/moorer/projects/ZetaHunter3000/test_files/zetas_arb-silva.de_2016-02-15_id318609/outdir"
   ENTROPY_DIR       = File.join ASSETS_DIR, "db_mask_entropy"
