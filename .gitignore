@@ -10,3 +10,5 @@ zh_test_files
 assets/for_entropy
 
 .DS_Store
+
+test_files/full_and_part_output

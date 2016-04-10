@@ -88,9 +88,9 @@ module Const
   # test files
   ############
 
-  TEST_DIR          = File.join PROJ_DIR, "zh_test_files"
-  TEST_OUTDIR       = File.join TEST_DIR, "full_and_part_output"
-  TEST_ALN = File.join TEST_DIR, "full_and_part.fa"
+  TEST_DIR    = File.join PROJ_DIR, "test_files"
+  TEST_OUTDIR = File.join TEST_DIR, "full_and_part_output"
+  TEST_ALN    = File.join TEST_DIR, "full_and_part.fa.gz"
 
   # TEST_OUTDIR = "/Users/moorer/projects/ZetaHunter3000/test_files/" +
   #               "zetas_arb-silva.de_2016-02-15_id318609/outdir"

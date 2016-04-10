@@ -120,9 +120,21 @@ opts[:outdir] = File.clean_fname opts[:outdir]
 # clean file names for mothur
 ######################################################################
 
+outdir_tmp = File.join opts[:outdir], "tmp"
+
 inaln_info = File.parse_fname opts[:inaln]
 
-outdir_tmp = File.join opts[:outdir], "tmp"
+gunzip = `which gunzip`.chomp
+abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
+
+inaln_not_gz = File.join outdir_tmp, "#{inaln_info[:base]}.not_gz.fa"
+if opts[:inaln].match(/.gz$/)
+  cmd = "#{gunzip} -c #{opts[:inaln]} > #{inaln_not_gz}"
+  log_cmd logger, cmd
+  Process.run_it! cmd
+  opts[:inaln] = inaln_not_gz
+  inaln_info = File.parse_fname opts[:inaln]
+end
 
 chimera_dir = File.join opts[:outdir], "chimera_details"
 
@@ -193,9 +205,9 @@ SORTMERNA_IDX = File.join outdir_tmp, "db_seqs.unaln.idx"
 # FOR TEST ONLY -- remove outdir before running
 ###############################################
 
-cmd = "rm -r #{opts[:outdir]}"
-log_cmd logger, cmd
-Process.run_it cmd
+# cmd = "rm -r #{opts[:outdir]}"
+# log_cmd logger, cmd
+# Process.run_it cmd
 
 # run = nil
 # run = true
@@ -325,10 +337,6 @@ if opts[:check_chimeras]
   ##########################
 
   SILVA_GOLD_ALN = File.join outdir_tmp, "silva.gold.align"
-  gunzip = `which gunzip`.chomp
-
-  abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
-
   cmd = "#{gunzip} -c #{SILVA_GOLD_ALN_GZ} > #{SILVA_GOLD_ALN}"
   log_cmd logger, cmd
   Process.run_it! cmd
