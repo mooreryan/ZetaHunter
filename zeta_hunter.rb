@@ -76,10 +76,6 @@ opts = Trollop.options do
 
   opt(:check_chimeras, "Flag to check chimeras", short: "-k",
       default: true)
-
-  opt(:closed_ref, "Method for closed reference part",
-      type: :string,
-      default: "mothur")
 end
 
 assert_file opts[:inaln]
@@ -101,9 +97,6 @@ end
 assert check,
        "--cluster-method must be one of furthest, average or " +
        "nearest"
-
-assert opts[:closed_ref] == "mothur" || opts[:closed_ref] == "sortmerna",
-       "--closed-ref must be one of mothur or sortmerna"
 
 ######################################################################
 # clean file names for mothur
