@@ -45,9 +45,6 @@ module Const
                    "image instead."
   end
 
-  # created by ZH
-  SORTMERNA_IDX_DIR = File.join ASSETS_DIR, "db_seqs_sortmerna_idx"
-
   #############
   # directories
   ####################################################################
@@ -61,8 +58,8 @@ module Const
   SILVA_FREQ        = File.join ASSETS_DIR, "silva.bacteria.freq"
   SILVA_QUAN        = File.join ASSETS_DIR, "silva.bacteria.pintail.quan"
   DB_OTU_INFO       = File.join ASSETS_DIR, "db_otu_info.txt"
-  DB_SEQS           = File.join ASSETS_DIR, "db_seqs.fa"
-  MASK              = File.join ASSETS_DIR, "mask.fa"
+  DB_SEQS           = File.join ASSETS_DIR, "db_seqs.fa.gz"
+  MASK              = File.join ASSETS_DIR, "mask.fa.gz"
   OUTGROUPS         = File.join ASSETS_DIR, "outgroup_names.txt"
 
   # this needs to be manually updated each time the db_seqs database

@@ -443,8 +443,6 @@ end
 
 # TODO only do this if it doesn't already exist
 Time.time_it("Build SortMeRNA index", logger) do
-  FileUtils.mkdir_p SORTMERNA_IDX_DIR
-
   refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
 
   cmd = "#{opts[:indexdb_rna]} " +
