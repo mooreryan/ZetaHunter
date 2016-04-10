@@ -1,4 +1,4 @@
-# LalaTeehee3000 #
+# ZetaHunter #
 
 ## Dependencies ##
 
@@ -8,7 +8,10 @@ See `Gemfile`
 
 ## Assets ##
 
-`silva.gold.align` is from http://www.mothur.org/wiki/Silva_reference_files
+`silva.gold.align.gz` is from http://www.mothur.org/wiki/Silva_reference_files
+
+**NOTE**: This file will be temporarily unzipped (requires 247mb of
+  hard drive space) if chimera checking is turned on.
 
 ### OTU Metadata ###
 
@@ -34,4 +37,4 @@ taken to be the sequence ID and must be unique.
 
 ## Entropy ##
 
-The entropy file
+The entropy file needs to be rebuilt each time `db_seqs.fa` is updated.

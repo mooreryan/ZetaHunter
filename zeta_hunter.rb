@@ -184,6 +184,11 @@ distance_based_otus =
   File.join opts[:outdir],
             "#{inaln_info[:base]}.distance_based_otus.txt"
 
+# for SortMeRNA
+DB_SEQS_UNALN = File.join outdir_tmp, "db_seqs.unaln.fa"
+SORTMERNA_IDX = File.join outdir_tmp, "db_seqs.unaln.idx"
+
+
 ######################################################################
 # FOR TEST ONLY -- remove outdir before running
 ###############################################
@@ -217,12 +222,6 @@ masked_input_seq_entropy = {}
 outgroup_names           = Set.new
 otu_info                 = []
 total_entropy            = 0
-
-# mothur params
-mothur_params = "fasta=#{opts[:inaln]}, " +
-                "reference=#{GOLD_ALN}, " +
-                "outputdir=#{opts[:outdir]}, " +
-                "processors=#{opts[:threads]}"
 
 Time.time_it("Create needed directories", logger) do
   FileUtils.mkdir_p opts[:outdir]
@@ -321,6 +320,29 @@ end
 ###################
 if opts[:check_chimeras]
 
+  ####################################################################
+  # unzip the silva gold aln
+  ##########################
+
+  SILVA_GOLD_ALN = File.join outdir_tmp, "silva.gold.align"
+  gunzip = `which gunzip`.chomp
+
+  abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
+
+  cmd = "#{gunzip} -c #{SILVA_GOLD_ALN_GZ} > #{SILVA_GOLD_ALN}"
+  log_cmd logger, cmd
+  Process.run_it! cmd
+
+  ##########################
+  # unzip the silva gold aln
+  ####################################################################
+
+  # mothur params
+  mothur_params = "fasta=#{opts[:inaln]}, " +
+                  "reference=#{SILVA_GOLD_ALN}, " +
+                  "outputdir=#{opts[:outdir]}, " +
+                  "processors=#{opts[:threads]}"
+
   # Time.time_it("Chimera Slayer", logger) do
   #   # in must be same length as reference
   #   cmd = "#{opts[:mothur]} " +
@@ -358,7 +380,7 @@ if opts[:check_chimeras]
   # Time.time_it("Pintail", logger) do
   #   cmd = "#{opts[:mothur]} " +
   #         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
-  #         "template=#{GOLD_ALN}, " +
+  #         "template=#{SILVA_GOLD_ALN}, " +
   #         "conservation=#{SILVA_FREQ}, " +
   #         "quantile=#{SILVA_QUAN}, " +
   #         "outputdir=#{opts[:outdir]}, " +
@@ -401,7 +423,7 @@ Time.time_it("Unalign DB seqs if needed", logger) do
 
   File.open(DB_SEQS_UNALN, "w") do |f|
     FastaFile.open(DB_SEQS, "rt").each_record do |head, seq|
-      f.puts ">#{head}"
+      f.puts ">#{clean(head.split(" ").first)}"
       f.puts remove_all_gaps(seq)
     end
   end
@@ -421,6 +443,8 @@ end
 
 # TODO only do this if it doesn't already exist
 Time.time_it("Build SortMeRNA index", logger) do
+  FileUtils.mkdir_p SORTMERNA_IDX_DIR
+
   refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
 
   cmd = "#{opts[:indexdb_rna]} " +
@@ -494,6 +518,7 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
         perc_bases_in_mask =
           masked_input_seq_entropy[user_seq][:perc_bases_in_mask]
 
+        # TODO assert db_otu_info.keys contains info[:hit]
         close_f.puts [user_seq,
                       db_otu_info[info[:hit]][:otu],
                       perc_total_entropy,

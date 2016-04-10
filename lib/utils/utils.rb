@@ -80,6 +80,7 @@ module Utils
         db_otu_info[id][:otu]
       else
         unless input_ids.include? id
+          warn "#{id} is not in #{db_otu_info.keys.inspect}"
           abort "ERROR: input_ids missing #{id}\n#{input_ids.inspect}"
         end
         assert_includes input_ids, id
@@ -162,12 +163,17 @@ module Utils
     mask_positions
   end
 
+  # also cleans the acc.
   def read_otu_metadata fname
     db_otu_info = {}
 
     File.open(fname, "rt").each_line do |line|
       unless line.start_with? "#"
         acc, otu, clone, num = line.chomp.split "\t"
+
+        # at some point the acc for the db seqs are getting cleaned,
+        # so need to clean this too. TODO find where that is
+        acc = clean acc
 
         assert !db_otu_info.has_key?(acc),
                "%s is repeated in %s",

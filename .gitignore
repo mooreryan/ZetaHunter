@@ -1,8 +1,12 @@
-assets/*
 formatdb.log
-zh_test_files
 Gemfile.lock
 *logfile
 notes.md
 .ruby-*
+
 my_bin
+old_assets
+zh_test_files
+assets/for_entropy
+
+.DS_Store
