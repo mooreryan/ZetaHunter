@@ -111,7 +111,7 @@ module Const
   MASK_LEN       = 1282
 
   # mim qcov for sort me rna calls
-  MIN_QCOV = 0.75
+  MIN_QCOV = 0.90
 
   ###########
   # constants

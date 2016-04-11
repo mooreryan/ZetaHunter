@@ -187,23 +187,24 @@ otu_file_base =
 otu_file = ""
 
 otu_calls_f =
-  File.join opts[:outdir], "#{inaln_info[:base]}.denovo.otu_calls.txt"
+  File.join opts[:outdir], "#{inaln_info[:base]}.otu_calls.denovo.txt"
 
 final_otu_calls_f =
-  File.join opts[:outdir], "#{inaln_info[:base]}.final.otu_calls.txt"
+  File.join opts[:outdir], "#{inaln_info[:base]}.otu_calls.final.txt"
 
 chimeric_seqs =
   File.join opts[:outdir], "#{inaln_info[:base]}.dangerous_seqs.txt"
 
-input_unaln = File.join opts[:outdir], "input_unaln.fa"
-sortme_blast = File.join opts[:outdir], "input_unaln.sortme_blast"
+input_unaln = File.join outdir_tmp, "#{inaln_info[:base]}.unaln.fa"
+sortme_blast =
+  File.join opts[:outdir], "#{inaln_info[:base]}.unlan.sortme_blast"
 closest_seqs =
   File.join opts[:outdir],
             "#{inaln_info[:base]}.closest_db_seqs.txt"
 
 distance_based_otus =
   File.join opts[:outdir],
-            "#{inaln_info[:base]}.distance_based_otus.txt"
+            "#{inaln_info[:base]}.otu_calls.closed_ref.txt"
 
 # for SortMeRNA
 DB_SEQS_UNALN = File.join outdir_tmp, "db_seqs.unaln.fa"
@@ -469,7 +470,8 @@ Time.time_it("SortMeRNA", logger) do
         "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
         "--reads #{input_unaln} " +
         "--aligned #{sortme_blast} " +
-        "--blast '1 qcov'"
+        "--blast '1 qcov' " +
+        "--num_alignments 0"
 
   # sort me rna adds .blast to the output base
   sortme_blast += ".blast"
@@ -479,6 +481,7 @@ Time.time_it("SortMeRNA", logger) do
   logger.debug { "SortMeRNA blast: #{sortme_blast}" }
 end
 
+# TODO double check that this doesn't assume one hit per query
 Time.time_it("Read SortMeRNA blast", logger) do
   File.open(sortme_blast, "rt").each_line do |line|
     user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
@@ -729,13 +732,20 @@ end
 ##########
 
 Time.time_it("Clean up", logger) do
-  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "mothur.*.logfile"
-  FileUtils.rm Dir.glob File.join File.dirname(__FILE__), "formatdb.log"
-  FileUtils.rm Dir.glob File.join TEST_DIR, "*.tmp.uchime_formatted"
+
+  FileUtils.rm Dir.glob File.join Dir.pwd, "*.tmp.uchime_formatted"
+
   FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+  FileUtils.rm Dir.glob File.join Dir.pwd, "mothur.*.logfile"
+
   FileUtils.rm_r outdir_tmp
+
   FileUtils.mkdir_p chimera_dir
   FileUtils.mv Dir.glob(chimera_details), chimera_dir
+
+  FileUtils.mv(sortme_blast,
+               File.join(opts[:outdir],
+                         "#{inaln_info[:base]}.all_sortmerna_db_hits.txt"))
 end
 
 ##########
