@@ -76,6 +76,8 @@ opts = Trollop.options do
 
   opt(:check_chimeras, "Flag to check chimeras", short: "-k",
       default: true)
+
+  opt(:force, "Force overwriting of out directory")
 end
 
 assert_file opts[:inaln]
@@ -85,7 +87,6 @@ assert_file opts[:db_seqs]
 assert_file opts[:mothur]
 assert_file opts[:sortmerna]
 assert_file opts[:indexdb_rna]
-
 
 assert opts[:threads] > 0,
        "--threads must be > 0, was %d",
@@ -116,6 +117,16 @@ opts[:outdir] = File.clean_fname opts[:outdir]
 outdir_tmp = File.join opts[:outdir], "tmp"
 
 Time.time_it("Create needed directories", logger) do
+
+  abort_if File.exists?(opts[:outdir]) && !opts[:force],
+           "Outdir '#{opts[:outdir]}' already exists. Force " +
+           "overwrite with --force or choose a different outdir."
+
+  if File.exists?(opts[:outdir]) && opts[:force]
+    AbortIf.logger.info { "We will overwrite #{opts[:outdir]}" }
+    FileUtils.rm_r opts[:outdir]
+  end
+
   FileUtils.mkdir_p opts[:outdir]
   FileUtils.mkdir_p outdir_tmp
 end
