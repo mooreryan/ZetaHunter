@@ -30,9 +30,9 @@ opts = Trollop.options do
   EOS
 
   opt(:inaln,
-      "Input alignment",
-      type: :string,
-      default: TEST_ALN)
+      "Input alignment(s)",
+      type: :strings,
+      default: [TEST_ALN])
 
   opt(:outdir,
       "Directory for output",
@@ -78,9 +78,14 @@ opts = Trollop.options do
       default: true)
 
   opt(:force, "Force overwriting of out directory")
+
+  opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 end
 
-assert_file opts[:inaln]
+opts[:inaln].each do |fname|
+  assert_file fname
+end
+
 assert_file opts[:db_otu_info]
 assert_file opts[:mask]
 assert_file opts[:db_seqs]
@@ -99,21 +104,6 @@ assert check,
        "--cluster-method must be one of furthest, average or " +
        "nearest"
 
-######################################################################
-# clean file names for mothur
-#############################
-
-opts[:inaln]       = File.clean_and_copy opts[:inaln]
-opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
-opts[:mask]        = File.clean_and_copy opts[:mask]
-opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
-
-opts[:outdir] = File.clean_fname opts[:outdir]
-
-#############################
-# clean file names for mothur
-######################################################################
-
 outdir_tmp = File.join opts[:outdir], "tmp"
 
 Time.time_it("Create needed directories", logger) do
@@ -131,18 +121,56 @@ Time.time_it("Create needed directories", logger) do
   FileUtils.mkdir_p outdir_tmp
 end
 
-inaln_info = File.parse_fname opts[:inaln]
+# This is way up here because it should note the ORIGINAL file names
+# with the sample
+library_to_fname_f =
+  File.join opts[:outdir],
+            "#{opts[:base]}.sample_id_to_fname.txt"
+
+Time.time_it("Write sample to file name map", logger) do
+  File.open(library_to_fname_f, "w") do |f|
+    f.puts %w[#Sample FileName].join "\t"
+
+    opts[:inaln].each_with_index do |fname, idx|
+      f.puts [idx+1, fname].join "\t"
+    end
+  end
+
+  AbortIf.logger.debug { "Sample to fname map: #{library_to_fname_f}" }
+end
+
+######################################################################
+# clean file names for mothur
+#############################
+
+opts[:inaln] = opts[:inaln].map { |fname| File.clean_and_copy fname }
+
+opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
+opts[:mask]        = File.clean_and_copy opts[:mask]
+opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
+
+opts[:outdir] = File.clean_fname opts[:outdir]
+
+#############################
+# clean file names for mothur
+######################################################################
+
+inaln_info = opts[:inaln].map { |fname| File.parse_fname fname }
 
 gunzip = `which gunzip`.chomp
 abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
 
-inaln_not_gz = File.join outdir_tmp, "#{inaln_info[:base]}.not_gz.fa"
-if opts[:inaln].match(/.gz$/)
-  cmd = "#{gunzip} -c #{opts[:inaln]} > #{inaln_not_gz}"
-  log_cmd logger, cmd
-  Process.run_it! cmd
-  opts[:inaln] = inaln_not_gz
-  inaln_info = File.parse_fname opts[:inaln]
+# ungzip in align files if needed
+opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
+  if fname.match(/.gz$/)
+    inaln_not_gz = File.join outdir_tmp, "#{inaln_info[idx][:base]}.not_gz.fa"
+    cmd = "#{gunzip} -c #{fname} > #{inaln_not_gz}"
+    log_cmd logger, cmd
+    Process.run_it! cmd
+    inaln_info[idx] = inaln_not_gz
+  else
+    fname
+  end
 end
 
 chimera_dir = File.join opts[:outdir], "chimera_details"
@@ -151,27 +179,24 @@ chimera_details =
   File.join opts[:outdir], "*.{pintail,uchime,slayer}.*"
 
 inaln_nogaps = File.join outdir_tmp,
-                         "#{inaln_info[:base]}.nogaps.fa"
+                         "#{opts[:base]}.nogaps.fa"
 
 slayer_chimera_info = File.join opts[:outdir],
-                                "#{inaln_info[:base]}" +
+                                "#{opts[:base]}" +
                                 ".slayer.chimeras"
 slayer_ids = File.join opts[:outdir],
-                       "#{inaln_info[:base]}" +
+                       "#{opts[:base]}" +
                        ".slayer.accnos"
 
 uchime_chimera_info = File.join opts[:outdir],
-                                "#{inaln_info[:base]}" +
+                                "#{opts[:base]}" +
                                 ".ref.uchime.chimeras"
-uchime_ids = File.join opts[:outdir],
-                       "#{inaln_info[:base]}" +
-                       ".ref.uchime.accnos"
 
 pintail_chimera_info = File.join opts[:outdir],
-                                "#{inaln_info[:base]}" +
+                                "#{opts[:base]}" +
                                 ".pintail.chimeras"
 pintail_ids = File.join opts[:outdir],
-                       "#{inaln_info[:base]}" +
+                       "#{opts[:base]}" +
                        ".pintail.accnos"
 
 cluster_me = File.join outdir_tmp, "cluster_me.fa"
@@ -186,25 +211,25 @@ otu_file_base =
 
 otu_file = ""
 
-otu_calls_f =
-  File.join opts[:outdir], "#{inaln_info[:base]}.otu_calls.denovo.txt"
+denovo_otus =
+  File.join opts[:outdir], "#{opts[:base]}.otu_calls.denovo.txt"
 
 final_otu_calls_f =
-  File.join opts[:outdir], "#{inaln_info[:base]}.otu_calls.final.txt"
+  File.join opts[:outdir], "#{opts[:base]}.otu_calls.final.txt"
 
 chimeric_seqs =
-  File.join opts[:outdir], "#{inaln_info[:base]}.dangerous_seqs.txt"
+  File.join opts[:outdir], "#{opts[:base]}.dangerous_seqs.txt"
 
-input_unaln = File.join outdir_tmp, "#{inaln_info[:base]}.unaln.fa"
+input_unaln = File.join outdir_tmp, "#{opts[:base]}.unaln.fa"
 sortme_blast =
-  File.join opts[:outdir], "#{inaln_info[:base]}.unlan.sortme_blast"
+  File.join opts[:outdir], "#{opts[:base]}.unlan.sortme_blast"
 closest_seqs =
   File.join opts[:outdir],
-            "#{inaln_info[:base]}.closest_db_seqs.txt"
+            "#{opts[:base]}.closest_db_seqs.txt"
 
 distance_based_otus =
   File.join opts[:outdir],
-            "#{inaln_info[:base]}.otu_calls.closed_ref.txt"
+            "#{opts[:base]}.otu_calls.closed_ref.txt"
 
 # for SortMeRNA
 DB_SEQS_UNALN = File.join outdir_tmp, "db_seqs.unaln.fa"
@@ -250,10 +275,13 @@ total_entropy            = 0
 ##############################
 
 Time.time_it("Process input data", logger) do
-  process_input_aln file: opts[:inaln],
-                    seq_ids: input_ids,
-                    seqs: input_seqs,
-                    gap_posns: gap_posns
+  opts[:inaln].each_with_index do |fname, idx|
+    process_input_aln file: fname,
+                      seq_ids: input_ids,
+                      seqs: input_seqs,
+                      gap_posns: gap_posns,
+                      lib: idx+1
+  end
 
   refute input_seqs.empty?, "Did not find any input seqs"
 end
@@ -351,15 +379,17 @@ if opts[:check_chimeras]
   ####################################################################
 
   # mothur params
-  mothur_params = "fasta=#{opts[:inaln]}, " +
-                  "reference=#{SILVA_GOLD_ALN}, " +
-                  "outputdir=#{opts[:outdir]}, " +
-                  "processors=#{opts[:threads]}"
+  mothur_params = opts[:inaln].map do |fname|
+    "fasta=#{fname}, " +
+      "reference=#{SILVA_GOLD_ALN}, " +
+      "outputdir=#{opts[:outdir]}, " +
+      "processors=#{opts[:threads]}"
+  end
 
   # Time.time_it("Chimera Slayer", logger) do
   #   # in must be same length as reference
   #   cmd = "#{opts[:mothur]} " +
-  #         "'#chimera.slayer(#{mothur_params})'"
+  #         "'#chimera.slayer(#{mothur_params})'" # TODO update for multi files
   #   log_cmd logger, cmd
   #   Process.run_it! cmd
   # end
@@ -374,25 +404,35 @@ if opts[:check_chimeras]
   # end
 
   Time.time_it("Uchime", logger) do
-    cmd = "#{opts[:mothur]} " +
-          "'#chimera.uchime(#{mothur_params})'"
-    log_cmd logger, cmd
-    Process.run_it! cmd
+    mothur_params.each do |params|
+      cmd = "#{opts[:mothur]} " +
+            "'#chimera.uchime(#{params})'"
+      log_cmd logger, cmd
+      Process.run_it! cmd
+    end
   end
 
-  Time.time_it("Read uchime chimeras", logger) do
-    File.open(uchime_ids, "rt").each_line do |line|
-      id = line.chomp
-      chimeric_ids.store_in_array id, "uchime"
 
-      logger.debug { "Uchime flagged #{id}" }
+  # There will be one uchime_ids file per opts[:inaln] fname
+  Time.time_it("Read uchime chimeras", logger) do
+    opts[:inaln].each do |fname|
+
+      base = File.basename(fname, File.extname(fname))
+      uchime_ids = File.join opts[:outdir], "#{base}.ref.uchime.accnos"
+
+      File.open(uchime_ids, "rt").each_line do |line|
+        id = line.chomp
+        chimeric_ids.store_in_array id, "uchime"
+
+        logger.debug { "Uchime flagged #{id}" }
+      end
     end
   end
 
 
   # Time.time_it("Pintail", logger) do
   #   cmd = "#{opts[:mothur]} " +
-  #         "'#chimera.pintail(fasta=#{opts[:inaln]}, " +
+  #         "'#chimera.pintail(fasta=#{opts[:inaln]}, " + # TODO HEHE
   #         "template=#{SILVA_GOLD_ALN}, " +
   #         "conservation=#{SILVA_FREQ}, " +
   #         "quantile=#{SILVA_QUAN}, " +
@@ -413,8 +453,13 @@ if opts[:check_chimeras]
 
   Time.time_it("Write chimeric seqs", logger) do
     File.open(chimeric_seqs, "w") do |f|
+      f.puts %w[#SeqID Sample ChimeraChecker].join "\t"
+
       chimeric_ids.sort_by { |k, v| k }.each do |id, software|
-        f.puts [id, software.sort.join(",")].join "\t"
+        clean_id = clean(id)
+        assert_keys input_seqs, clean_id
+        sample = input_seqs[clean_id][:lib]
+        f.puts [clean_id, sample, software.sort.join(",")].join "\t"
       end
     end
 
@@ -508,23 +553,26 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
   File.open(closest_seqs, "w") do |close_f|
     File.open(distance_based_otus, "w") do |otu_f|
       close_f.puts ["#SeqID",
-                   "OTU",
-                   "PercEntropy",
-                   "PercMaskedBases",
-                   "Hit",
-                   "PID",
-                   "QCov"].join "\t"
+                    "Sample",
+                    "OTU",
+                    "PercEntropy",
+                    "PercMaskedBases",
+                    "Hit",
+                    "PID",
+                    "QCov"].join "\t"
 
       otu_f.puts ["#SeqID",
-                   "OTU",
-                   "PercEntropy",
-                   "PercMaskedBases",
-                   "Hit",
-                   "PID",
-                   "QCov"].join "\t"
+                  "Sample",
+                  "OTU",
+                  "PercEntropy",
+                  "PercMaskedBases",
+                  "Hit",
+                  "PID",
+                  "QCov"].join "\t"
 
       closed_ref_otus.each do |user_seq, info|
         assert_keys masked_input_seq_entropy, user_seq
+        assert_keys input_seqs, user_seq
 
         perc_total_entropy =
           masked_input_seq_entropy[user_seq][:perc_total_entropy]
@@ -533,6 +581,7 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
 
         # TODO assert db_otu_info.keys contains info[:hit]
         close_f.puts [user_seq,
+                      input_seqs[user_seq][:lib],
                       db_otu_info[info[:hit]][:otu],
                       perc_total_entropy,
                       perc_bases_in_mask,
@@ -547,6 +596,7 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
         else
 
           otu_f.puts [user_seq,
+                      input_seqs[user_seq][:lib],
                       db_otu_info[info[:hit]][:otu],
                       perc_total_entropy,
                       perc_bases_in_mask,
@@ -639,21 +689,21 @@ end
 
 probably_not_zetas_f =
   File.join opts[:outdir],
-            "#{inaln_info[:base]}.probably_not_zetas.txt"
+            "#{opts[:base]}.probably_not_zetas.txt"
 
 possibly_not_zetas_f =
   File.join opts[:outdir],
-            "#{inaln_info[:base]}.possibly_not_zetas.txt"
+            "#{opts[:base]}.possibly_not_zetas.txt"
 
 Time.time_it("Assign de novo OTUs", logger) do
   # TODO generate good names for new OTUs
   File.open(possibly_not_zetas_f, "w") do |pnzf|
-    pnzf.puts %w[#SeqID DBHit PID].join "\t"
+    pnzf.puts %w[#SeqID Sample DBHit PID].join "\t"
     File.open(probably_not_zetas_f, "w") do |nzf|
-      nzf.puts %w[#SeqID DBHit PID].join "\t"
+      nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
 
-      File.open(otu_calls_f, "w") do |f|
-        f.puts %w[#SeqID OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+      File.open(denovo_otus, "w") do |f|
+        f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
         File.open(otu_file, "rt").each_line do |line|
           otu, id_str = line.chomp.split "\t"
@@ -671,8 +721,12 @@ Time.time_it("Assign de novo OTUs", logger) do
           only_input_ids = ids.select { |id| input_ids.include?(id) }
 
           only_input_ids.each do |id|
+            assert_keys input_seqs, id
+            sample = input_seqs[id][:lib]
+
             if otu_size == 1 && closest_to_outgroups.include?(id)
               nzf.puts [id,
+                        sample,
                         closed_ref_otus[id][:hit],
                         closed_ref_otus[id][:pid]].join "\t"
 
@@ -681,6 +735,7 @@ Time.time_it("Assign de novo OTUs", logger) do
               assert_keys masked_input_seq_entropy, id
               perc_entropy = masked_input_seq_entropy[id]
               f.puts [id,
+                      sample,
                       otu_call,
                       perc_entropy[:perc_total_entropy],
                       perc_entropy[:perc_bases_in_mask],
@@ -693,29 +748,30 @@ Time.time_it("Assign de novo OTUs", logger) do
   end
 
   logger.info { "seqs that probably are not Zetas: #{probably_not_zetas_f}" }
-  logger.info { "de novo OTU calls written to #{otu_calls_f}" }
+  logger.info { "de novo OTU calls written to #{denovo_otus}" }
 end
 
 Time.time_it("Write final OTU calls", logger) do
   File.open(final_otu_calls_f, "w") do |f|
     f.puts ["#SeqID",
+            "Sample",
             "OTU",
             "PercEntropy",
             "PercMaskedBases"].join "\t"
 
     File.open(distance_based_otus, "rt").each_line do |line|
       unless line.start_with? "#"
-        seq, otu, ent, masked, *rest = line.chomp.split "\t"
+        seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
 
-        f.puts [seq, otu, ent, masked].join "\t"
+        f.puts [seq, sample, otu, ent, masked].join "\t"
       end
     end
 
-    File.open(otu_calls_f, "rt").each_line do |line|
+    File.open(denovo_otus, "rt").each_line do |line|
       unless line.start_with? "#"
-        seq, otu, ent, masked, *rest = line.chomp.split "\t"
+        seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
 
-        f.puts [seq, otu, ent, masked].join "\t"
+        f.puts [seq, sample, otu, ent, masked].join "\t"
       end
     end
   end
@@ -745,9 +801,20 @@ Time.time_it("Clean up", logger) do
 
   FileUtils.mv(sortme_blast,
                File.join(opts[:outdir],
-                         "#{inaln_info[:base]}.all_sortmerna_db_hits.txt"))
+                         "#{opts[:base]}.all_sortmerna_db_hits.txt"))
 end
 
 ##########
 # clean up
 ######################################################################
+
+AbortIf.logger.info { "FINAL FILE OUTPUTS"                           }
+AbortIf.logger.info { "Final OTUs:          #{final_otu_calls_f}"    }
+AbortIf.logger.info { "Denovo OTUs:         #{denovo_otus}"          }
+AbortIf.logger.info { "Closed ref OTUs:     #{distance_based_otus}"  }
+AbortIf.logger.info { "SortMeRNA output:    #{sortme_blast}"         }
+AbortIf.logger.info { "Closest DB seqs:     #{closest_seqs}"         }
+AbortIf.logger.info { "Chimeras:            #{chimeric_seqs}"        }
+AbortIf.logger.info { "Probably not zetas:  #{probably_not_zetas_f}" }
+AbortIf.logger.info { "Possibly not zetas:  #{possibly_not_zetas_f}" }
+AbortIf.logger.info { "Sample to fname map: #{library_to_fname_f}"   }

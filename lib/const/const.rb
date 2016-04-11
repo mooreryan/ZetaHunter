@@ -113,6 +113,8 @@ module Const
   # mim qcov for sort me rna calls
   MIN_QCOV = 0.90
 
+  START_TIME = Time.now.strftime("%Y_%m_%d_%H_%M")
+
   ###########
   # constants
   ####################################################################

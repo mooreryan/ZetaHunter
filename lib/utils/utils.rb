@@ -129,7 +129,7 @@ module Utils
       perc_bases_in_mask: perc_bases_in_mask }
   end
 
-  def process_input_aln(file:, seq_ids:, seqs:, gap_posns:)
+  def process_input_aln(file:, seq_ids:, seqs:, gap_posns:, lib: 0)
     FastaFile.open(file, "rt").each_record do |head, seq|
       assert_seq_len seq, head
 
@@ -139,7 +139,7 @@ module Utils
       seq_ids << id
 
       refute_has_key seqs, id
-      seqs[id] =  { orig: rna_to_dna(seq) }
+      seqs[id] =  { orig: rna_to_dna(seq), lib: lib }
 
       refute seqs[id][:orig].match(/U/i)
 
