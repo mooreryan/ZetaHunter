@@ -132,7 +132,7 @@ Time.time_it("Write sample to file name map", logger) do
     f.puts %w[#Sample FileName].join "\t"
 
     opts[:inaln].each_with_index do |fname, idx|
-      f.puts [idx+1, fname].join "\t"
+      f.puts ["S#{idx+1}", fname].join "\t"
     end
   end
 
@@ -280,7 +280,7 @@ Time.time_it("Process input data", logger) do
                       seq_ids: input_ids,
                       seqs: input_seqs,
                       gap_posns: gap_posns,
-                      lib: idx+1
+                      lib: "S#{idx+1}"
   end
 
   refute input_seqs.empty?, "Did not find any input seqs"
@@ -687,6 +687,10 @@ Time.time_it("Find OTU file", logger) do
   logger.debug { "For OTUs, using #{otu_file}" }
 end
 
+biom_file =
+  File.join opts[:outdir],
+            "#{opts[:base]}.biom.txt"
+
 probably_not_zetas_f =
   File.join opts[:outdir],
             "#{opts[:base]}.probably_not_zetas.txt"
@@ -784,6 +788,54 @@ end
 ######################################################################
 
 ######################################################################
+# write biom file
+#################
+
+Time.time_it("Write biom file", logger) do
+  File.open(biom_file, "w") do |f|
+    sample_arr = opts[:inaln].map.with_index do |_, idx|
+      "S#{idx+1}"
+    end
+
+    otu_counts = {}
+    f.puts ["#OTU ID", sample_arr].flatten.join "\t"
+    File.open(final_otu_calls_f).each_line do |line|
+      unless line.start_with? "#"
+        seqid, sample, otu, _, _ = line.chomp.split "\t"
+
+        if otu_counts.has_key? otu
+          if otu_counts[otu].has_key? sample
+            otu_counts[otu][sample] += 1
+          else
+            otu_counts[otu][sample] = 1
+          end
+        else
+          otu_counts[otu] = { sample => 1 }
+        end
+      end
+    end
+
+    otu_counts.each do |otu, info|
+      sample_counts = sample_arr.map do |key|
+        if info.has_key? key
+          count = info[key]
+        else
+          count = 0
+        end
+
+      end
+
+      f.puts [otu, sample_counts].join "\t"
+    end
+  end
+end
+
+#################
+# write biom file
+######################################################################
+
+
+######################################################################
 # clean up
 ##########
 
@@ -809,6 +861,7 @@ end
 ######################################################################
 
 AbortIf.logger.info { "FINAL FILE OUTPUTS"                           }
+AbortIf.logger.info { "Biom file:           #{biom_file}"            }
 AbortIf.logger.info { "Final OTUs:          #{final_otu_calls_f}"    }
 AbortIf.logger.info { "Denovo OTUs:         #{denovo_otus}"          }
 AbortIf.logger.info { "Closed ref OTUs:     #{distance_based_otus}"  }
