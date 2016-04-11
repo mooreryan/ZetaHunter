@@ -115,6 +115,11 @@ opts[:outdir] = File.clean_fname opts[:outdir]
 
 outdir_tmp = File.join opts[:outdir], "tmp"
 
+Time.time_it("Create needed directories", logger) do
+  FileUtils.mkdir_p opts[:outdir]
+  FileUtils.mkdir_p outdir_tmp
+end
+
 inaln_info = File.parse_fname opts[:inaln]
 
 gunzip = `which gunzip`.chomp
@@ -227,11 +232,6 @@ masked_input_seq_entropy = {}
 outgroup_names           = Set.new
 otu_info                 = []
 total_entropy            = 0
-
-Time.time_it("Create needed directories", logger) do
-  FileUtils.mkdir_p opts[:outdir]
-  FileUtils.mkdir_p outdir_tmp
-end
 
 ######################################################################
 # process user input alignment
