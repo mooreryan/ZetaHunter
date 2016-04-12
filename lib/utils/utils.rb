@@ -65,7 +65,7 @@ module Utils
     end
 
     if otu_call.empty?
-      otu_call = "USR-OTU-#{@@usr_otu_num}"
+      otu_call = "NewZetaOtu#{@@usr_otu_num}"
       @@usr_otu_num += 1
     end
 
