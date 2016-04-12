@@ -244,4 +244,10 @@ module Utils
                                   "average, or nearest. Got: #{method}"
     end
   end
+
+  def check_for_error mothur_log
+    AbortIf::Abi.abort_if(File.read(mothur_log).include?("ERROR"),
+                          "Mothur exited with an error. " +
+                          "Check #{mothur_log} for details.")
+  end
 end

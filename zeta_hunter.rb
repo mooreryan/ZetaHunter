@@ -443,6 +443,8 @@ if opts[:check_chimeras]
             "#{redirect_log}"
       log_cmd logger, cmd
       Process.run_it! cmd
+
+      check_for_error mothur_log
     end
   end
 
@@ -683,6 +685,8 @@ Time.time_it("Distance", logger) do
 
   log_cmd logger, cmd
   Process.run_it! cmd
+
+  check_for_error mothur_log
 end
 
 # warn "EMERGENCY BRAKE ENGAGED!"
@@ -696,6 +700,8 @@ Time.time_it("Cluster", logger) do
 
   log_cmd logger, cmd
   Process.run_it! cmd
+
+  check_for_error mothur_log
 end
 
 Time.time_it("Get OTU list", logger) do
@@ -703,6 +709,8 @@ Time.time_it("Get OTU list", logger) do
         "#{redirect_log}"
   log_cmd logger, cmd
   Process.run_it! cmd
+
+  check_for_error mothur_log
 end
 
 #########
