@@ -2,7 +2,7 @@ require_relative File.join "lib", "lib_helper.rb"
 
 include Const
 include Utils
-include Assert
+#include Assert
 
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
@@ -112,26 +112,26 @@ end
 ######################################################################
 
 opts[:inaln].each do |fname|
-  assert_file fname
+  AbortIf::Abi.abort_unless_file_exists fname
 end
 
-assert_file opts[:db_otu_info]
-assert_file opts[:mask]
-assert_file opts[:db_seqs]
-assert_file opts[:mothur]
-assert_file opts[:sortmerna]
-assert_file opts[:indexdb_rna]
+AbortIf::Abi.abort_unless_file_exists opts[:db_otu_info]
+AbortIf::Abi.abort_unless_file_exists opts[:mask]
+AbortIf::Abi.abort_unless_file_exists opts[:db_seqs]
+AbortIf::Abi.abort_unless_file_exists opts[:mothur]
+AbortIf::Abi.abort_unless_file_exists opts[:sortmerna]
+AbortIf::Abi.abort_unless_file_exists opts[:indexdb_rna]
 
-assert opts[:threads] > 0,
-       "--threads must be > 0, was %d",
-       opts[:threads]
+msg = "--threads must be > 0, was #{opts[:threads]}"
+AbortIf::Abi.abort_unless opts[:threads] > 0, msg
 
 check = %w[furthest average nearest].one? do |opt|
   opts[:cluster_method] == opt
 end
-assert check,
-       "--cluster-method must be one of furthest, average or " +
-       "nearest"
+
+msg = "--cluster-method must be one of furthest, average or nearest"
+AbortIf::Abi.abort_unless check, msg
+
 
 ######################################################################
 # clean file names for mothur
@@ -315,7 +315,8 @@ Time.time_it("Process input data", logger) do
                       lib: "S#{idx+1}"
   end
 
-  refute input_seqs.empty?, "Did not find any input seqs"
+  AbortIf::Abi.abort_if input_seqs.empty?,
+                        "Did not find any input seqs"
 end
 
 ##############################
@@ -347,7 +348,7 @@ Time.time_it("Update shared gap posns with db seqs", logger) do
                     seqs: db_seqs,
                     gap_posns: gap_posns
 
-  refute db_seqs.empty?, "Did not find any DB seqs"
+  AbortIf::Abi.abort_if db_seqs.empty?, "Did not find any DB seqs"
 end
 
 Time.time_it("Read outgroups", logger) do
@@ -368,7 +369,7 @@ Time.time_it("Degap and mask", logger) do
   update_with_degapped_and_mask input_seqs, mask, shared_gap_posns
   update_with_degapped_and_mask db_seqs, mask, shared_gap_posns
 
-  assert_keys input_seqs.first.last, :masked, :degapped
+  AbortIf::Abi.assert_keys input_seqs.first.last, :masked, :degapped
 end
 
 ##############
@@ -381,7 +382,9 @@ end
 
 Time.time_it("Get entropy for masked user seqs", logger) do
   input_seqs.each do |head, seqs|
-    refute_has_key masked_input_seq_entropy, head
+    msg = "Seq '#{head}' is repeated in masked_input_seq_entropy"
+    AbortIf::Abi.abort_if masked_input_seq_entropy.has_key?(head), msg
+
     seq_entropy = get_seq_entropy seqs[:masked], entropy
     masked_input_seq_entropy[head] = seq_entropy
   end
@@ -493,7 +496,7 @@ if opts[:check_chimeras]
 
       chimeric_ids.sort_by { |k, v| k }.each do |id, software|
         clean_id = clean(id)
-        assert_keys input_seqs, clean_id
+        AbortIf::Abi.assert_keys input_seqs, clean_id
         sample = input_seqs[clean_id][:lib]
         f.puts [clean_id, sample, software.sort.join(",")].join "\t"
       end
@@ -537,7 +540,7 @@ end
 
 # TODO only do this if it doesn't already exist
 Time.time_it("Build SortMeRNA index", logger) do
-  refute DB_SEQS_UNALN.empty?, "Did not find unaligned DB seqs"
+  AbortIf::Abi.abort_unless_file_exists DB_SEQS_UNALN
 
   cmd = "#{opts[:indexdb_rna]} " +
         "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
@@ -607,8 +610,8 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
                   "QCov"].join "\t"
 
       closed_ref_otus.each do |user_seq, info|
-        assert_keys masked_input_seq_entropy, user_seq
-        assert_keys input_seqs, user_seq
+        AbortIf::Abi.assert_keys masked_input_seq_entropy, user_seq
+        AbortIf::Abi.assert_keys input_seqs, user_seq
 
         perc_total_entropy =
           masked_input_seq_entropy[user_seq][:perc_total_entropy]
@@ -626,7 +629,7 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
                       info[:qcov]].join "\t"
 
         if info[:pid] < 97.0 # will be clustered later
-          assert input_seqs.has_key? user_seq
+          AbortIf::Abi.assert input_seqs.has_key? user_seq
           cluster_these_user_seqs[user_seq] = input_seqs[user_seq]
           closest_to_outgroups << user_seq
         else
@@ -660,8 +663,8 @@ end
 
 run = true
 Time.time_it("Write masked, combined fasta", logger) do
-  refute input_seqs.empty?, "Did not find any input seqs"
-  refute db_seqs.empty?, "Did not find any DB seqs"
+  AbortIf::Abi.refute input_seqs.empty?, "Did not find any input seqs"
+  AbortIf::Abi.refute db_seqs.empty?, "Did not find any DB seqs"
   File.open(cluster_me, "w") do |f|
     cluster_these_user_seqs.each do |head, seqs|
       f.printf ">%s\n%s\n", head, seqs[:masked]
@@ -728,7 +731,7 @@ Time.time_it("Find OTU file", logger) do
     logger.debug { "OTU file #{otu_file} not found" }
   end
 
-  assert_file otu_file
+  AbortIf::Abi.abort_unless_file_exists otu_file
   logger.debug { "For OTUs, using #{otu_file}" }
 end
 
@@ -759,8 +762,8 @@ Time.time_it("Assign de novo OTUs", logger) do
           ids = id_str.split ","
           otu_size = ids.count
 
-          refute otu_size.zero?
-          # logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
+          AbortIf::Abi.abort_if otu_size.zero?,
+                                "OTU '#{otu}' had size zero"
 
           otu_calls = get_otu_calls ids, db_otu_info, input_ids
 
@@ -770,7 +773,7 @@ Time.time_it("Assign de novo OTUs", logger) do
           only_input_ids = ids.select { |id| input_ids.include?(id) }
 
           only_input_ids.each do |id|
-            assert_keys input_seqs, id
+            AbortIf::Abi.assert_keys input_seqs, id
             sample = input_seqs[id][:lib]
 
             if otu_size == 1 && closest_to_outgroups.include?(id)
@@ -781,7 +784,7 @@ Time.time_it("Assign de novo OTUs", logger) do
 
               logger.info { "Seq: #{id} is probably not a Zeta" }
             else
-              assert_keys masked_input_seq_entropy, id
+              AbortIf::Abi.assert_keys masked_input_seq_entropy, id
               perc_entropy = masked_input_seq_entropy[id]
               f.puts [id,
                       sample,

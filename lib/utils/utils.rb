@@ -51,12 +51,12 @@ module Utils
   end
 
   def get_otu_call otu_call_counts
-    assert otu_call_counts
+    AbortIf::Abi.assert otu_call_counts
 
     otu_call = ""
     otu_call_counts.each do |otu, count|
-      assert otu
-      assert count
+      AbortIf::Abi.assert otu
+      AbortIf::Abi.assert count
 
       unless otu == "USR"
         otu_call = otu
@@ -69,9 +69,8 @@ module Utils
       @@usr_otu_num += 1
     end
 
-    refute otu_call.empty?,
-           "Could not determine OTU for %s",
-           otu_call_counts
+    msg = "Could not determine OTU for #{otu_call_counts}"
+    AbortIf::Abi.abort_if otu_call.empty?, msg
 
     otu_call
   end
@@ -81,11 +80,9 @@ module Utils
       if db_otu_info.has_key? id
         db_otu_info[id][:otu]
       else
-        unless input_ids.include? id
-          warn "#{id} is not in #{db_otu_info.keys.inspect}"
-          abort "ERROR: input_ids missing #{id}\n#{input_ids.inspect}"
-        end
-        assert_includes input_ids, id
+        AbortIf::Abi.assert input_ids.include?(id),
+                            "ID '#{id}' is missing from input_ids"
+
         "USR"
       end
     end
@@ -98,15 +95,15 @@ module Utils
       sort_by { |otu, count| count }.
       reverse
 
-    refute counts.empty?, "No count info for %s", otu_calls.inspect
+    AbortIf::Abi.refute counts.empty?, "No count info for %s", otu_calls.inspect
 
     counts
   end
 
   def get_seq_entropy seq, entropy
-    assert seq
-    assert entropy
-    assert seq.length == entropy.length,
+    AbortIf::Abi.assert seq
+    AbortIf::Abi.assert entropy
+    AbortIf::Abi.assert seq.length == entropy.length,
            "Seq length was %d should be %d",
            seq.length,
            entropy.length
@@ -133,17 +130,24 @@ module Utils
 
   def process_input_aln(file:, seq_ids:, seqs:, gap_posns:, lib: 0)
     FastaFile.open(file, "rt").each_record do |head, seq|
-      assert_seq_len seq, head
+      msg = "Seq '#{head}' in file '#{file}' has length " +
+            "'#{seq.length}'. Should be '#{Const::SILVA_ALN_LEN}'"
+      AbortIf::Abi.abort_unless seq.length == Const::SILVA_ALN_LEN, msg
+
 
       id = clean head.split(" ").first
 
-      refute_includes seq_ids, id
+      msg = "Seq ID '#{id}' is repeated in file '#{file}'"
+      AbortIf::Abi.abort_if seq_ids.include?(id), msg
+
       seq_ids << id
 
-      refute_has_key seqs, id
+      AbortIf::Abi.abort_if seqs.has_key?(id), msg
+
       seqs[id] =  { orig: rna_to_dna(seq), lib: lib }
 
-      refute seqs[id][:orig].match(/U/i)
+      AbortIf::Abi.abort_if seqs[id][:orig].match(/U/i),
+                            "Seq '#{id}' looks like RNA, should be DNA"
 
       update_gap_posns gap_posns, seq
     end
@@ -153,9 +157,12 @@ module Utils
     mask_positions = []
 
     FastaFile.open(fname, "rt").each_record do |head, seq|
-      assert_seq_len seq, "Mask"
+      msg = "Seq '#{head}' in file '#{fname}' has length " +
+            "'#{seq.length}'. Should be '#{Const::SILVA_ALN_LEN}'"
+      AbortIf::Abi.abort_unless seq.length == Const::SILVA_ALN_LEN, msg
 
-      refute seq.match(/[^-*~\.]/), "Improper characters in the mask"
+      msg = "Improper characters in the mask in file '#{fname}'"
+      AbortIf::Abi.abort_if seq.match(/[^-*~\.]/), msg
 
       seq.each_char.with_index do |char, idx|
         mask_positions << idx if char == "*"
@@ -177,10 +184,8 @@ module Utils
         # so need to clean this too. TODO find where that is
         acc = clean acc
 
-        assert !db_otu_info.has_key?(acc),
-               "%s is repeated in %s",
-               acc,
-               fname
+        msg = "Seq ID '#{acc}' is repeated in file '#{fname}'"
+        AbortIf::Abi.abort_if db_otu_info.has_key?(acc), msg
 
         db_otu_info[acc] = { otu: otu, clone: clone, num: num.to_i }
       end
@@ -199,9 +204,9 @@ module Utils
 
   def update_with_degapped_and_mask seqs, mask, shared_gap_posns
     seqs.each do |head, info|
-      assert head
-      assert info
-      assert_keys info, :orig
+      AbortIf::Abi.assert head
+      AbortIf::Abi.assert info
+      AbortIf::Abi.assert_keys info, :orig
 
       orig = info[:orig]
       # masked = ""
@@ -215,8 +220,8 @@ module Utils
       masked = mask.map { |idx| orig[idx] }.join
       degapped = shared_gap_posns.map { |idx| orig[idx] }.join
 
-      assert masked.length == mask.length
-      assert degapped.length == shared_gap_posns.count
+      AbortIf::Abi.assert masked.length == mask.length
+      AbortIf::Abi.assert degapped.length == shared_gap_posns.count
 
       seqs[head][:masked] = masked
       seqs[head][:degapped] = degapped
