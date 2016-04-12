@@ -2,6 +2,24 @@
 
 ## Dependencies ##
 
+### External programs ###
+
+#### Mothur ####
+
+[Mothur](http://mothur.org/)
+
+Please cite
+
+    Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41.
+
+#### SortMeRNA ####
+
+[SortMeRNA](http://bioinfo.lifl.fr/RNA/sortmerna/)
+
+Please cite
+
+    Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
+
 ### Gems ###
 
 See `Gemfile`
