@@ -104,6 +104,22 @@ assert check,
        "--cluster-method must be one of furthest, average or " +
        "nearest"
 
+######################################################################
+# clean file names for mothur
+#############################
+
+opts[:inaln] = opts[:inaln].map { |fname| File.clean_and_copy fname }
+
+opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
+opts[:mask]        = File.clean_and_copy opts[:mask]
+opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
+
+opts[:outdir] = File.clean_fname opts[:outdir]
+
+#############################
+# clean file names for mothur
+######################################################################
+
 outdir_tmp = File.join opts[:outdir], "tmp"
 
 Time.time_it("Create needed directories", logger) do
@@ -139,22 +155,6 @@ Time.time_it("Write sample to file name map", logger) do
   AbortIf.logger.debug { "Sample to fname map: #{library_to_fname_f}" }
 end
 
-######################################################################
-# clean file names for mothur
-#############################
-
-opts[:inaln] = opts[:inaln].map { |fname| File.clean_and_copy fname }
-
-opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
-opts[:mask]        = File.clean_and_copy opts[:mask]
-opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
-
-opts[:outdir] = File.clean_fname opts[:outdir]
-
-#############################
-# clean file names for mothur
-######################################################################
-
 inaln_info = opts[:inaln].map { |fname| File.parse_fname fname }
 
 gunzip = `which gunzip`.chomp
@@ -172,6 +172,9 @@ opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
     fname
   end
 end
+
+mothur_log = File.join opts[:outdir], "#{opts[:base]}.mothur_log.txt"
+redirect_log = ">> #{mothur_log} 2>&1"
 
 chimera_dir = File.join opts[:outdir], "chimera_details"
 
@@ -389,7 +392,8 @@ if opts[:check_chimeras]
   # Time.time_it("Chimera Slayer", logger) do
   #   # in must be same length as reference
   #   cmd = "#{opts[:mothur]} " +
-  #         "'#chimera.slayer(#{mothur_params})'" # TODO update for multi files
+  #         "'#chimera.slayer(#{mothur_params})' " + # TODO update for multi files
+  #         "#{redirect_log}"
   #   log_cmd logger, cmd
   #   Process.run_it! cmd
   # end
@@ -406,12 +410,12 @@ if opts[:check_chimeras]
   Time.time_it("Uchime", logger) do
     mothur_params.each do |params|
       cmd = "#{opts[:mothur]} " +
-            "'#chimera.uchime(#{params})'"
+            "'#chimera.uchime(#{params})' " +
+            "#{redirect_log}"
       log_cmd logger, cmd
       Process.run_it! cmd
     end
   end
-
 
   # There will be one uchime_ids file per opts[:inaln] fname
   Time.time_it("Read uchime chimeras", logger) do
@@ -437,7 +441,8 @@ if opts[:check_chimeras]
   #         "conservation=#{SILVA_FREQ}, " +
   #         "quantile=#{SILVA_QUAN}, " +
   #         "outputdir=#{opts[:outdir]}, " +
-  #         "processors=#{opts[:threads]})'"
+  #         "processors=#{opts[:threads]})' " +
+  #         "#{redirect_log}"
   #   log_cmd logger, cmd
   #   Process.run_it! cmd
   # end
@@ -644,7 +649,8 @@ Time.time_it("Distance", logger) do
         "'#dist.seqs(fasta=#{cluster_me}, " +
         "outputdir=#{outdir_tmp}, " +
         "output=lt, " +
-        "processors=#{opts[:threads]})'"
+        "processors=#{opts[:threads]})' " +
+        "#{redirect_log}"
 
   log_cmd logger, cmd
   Process.run_it! cmd
@@ -656,14 +662,16 @@ end
 Time.time_it("Cluster", logger) do
   cmd = "#{opts[:mothur]} " +
         "'#cluster(phylip=#{cluster_me_dist}, " +
-        "method=#{opts[:cluster_method]})'"
+        "method=#{opts[:cluster_method]})' " +
+        "#{redirect_log}"
 
   log_cmd logger, cmd
   Process.run_it! cmd
 end
 
 Time.time_it("Get OTU list", logger) do
-  cmd = "#{opts[:mothur]} '#get.otulist(list=#{cluster_me_list})'"
+  cmd = "#{opts[:mothur]} '#get.otulist(list=#{cluster_me_list})' " +
+        "#{redirect_log}"
   log_cmd logger, cmd
   Process.run_it! cmd
 end
@@ -715,7 +723,7 @@ Time.time_it("Assign de novo OTUs", logger) do
           otu_size = ids.count
 
           refute otu_size.zero?
-          logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
+          # logger.debug { "MOTHUR OTU #{otu} had #{otu_size} sequence(s)" }
 
           otu_calls = get_otu_calls ids, db_otu_info, input_ids
 
