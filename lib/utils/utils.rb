@@ -1,3 +1,5 @@
+require_relative "../abort_if/abort_if"
+
 module Utils
   @@usr_otu_num = 1
 
@@ -238,8 +240,8 @@ module Utils
     elsif method == "nearest"
       return "nn"
     else
-      abort_if true, "--cluster-method must be one of furthest, " +
-                      "average, or nearest. Got: #{method}"
+      AbortIf::Abi.abort_if true, "--cluster-method must be one of furthest, " +
+                                  "average, or nearest. Got: #{method}"
     end
   end
 end

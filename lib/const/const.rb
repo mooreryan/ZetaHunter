@@ -1,11 +1,9 @@
 require "abort_if"
 require "os"
 require_relative "../version"
-
-
+require_relative "../abort_if/abort_if"
 
 module Const
-
   ####################################################################
   # program info
   ##############
@@ -41,8 +39,8 @@ module Const
   elsif OS.linux?
     BIN_DIR = File.join PROJ_DIR, "bin", "linux"
   else
-    abort_if true, "OS is neither Mac or Linux...use the Docker " +
-                   "image instead."
+    Abi.abort_if true, "OS is neither Mac or Linux...use the Docker " +
+                       "image instead."
   end
 
   #############

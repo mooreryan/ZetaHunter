@@ -1,7 +1,5 @@
 require "systemu"
-require "abort_if"
-
-include AbortIf
+require_relative "../../abort_if/abort_if"
 
 module CoreExtensions
   module Process
@@ -17,8 +15,8 @@ module CoreExtensions
     def run_it! *a, &b
       exit_status = self.run_it *a, &b
 
-      abort_unless exit_status.zero?,
-                   "ERROR: non-zero exit status (#{exit_status})"
+      AbortIf::Abi.abort_unless exit_status.zero?,
+                       "ERROR: non-zero exit status (#{exit_status})"
 
       exit_status
     end

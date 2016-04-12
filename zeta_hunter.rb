@@ -3,17 +3,13 @@ require_relative File.join "lib", "lib_helper.rb"
 include Const
 include Utils
 include Assert
-include AbortIf
 
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
 File.extend CoreExtensions::File
 Hash.include CoreExtensions::Hash
 
-logger = Logger.new STDERR
-
 this_dir = File.dirname(__FILE__)
-
 
 require "trollop"
 
@@ -82,6 +78,39 @@ opts = Trollop.options do
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 end
 
+######################################################################
+# set up logger
+###############
+
+zh_log = "#{opts[:base]}.log.zh.txt"
+logger = Log4r::Logger.new "ZH Log"
+
+stderr_outputter  = Log4r::StderrOutputter.new("stderr")
+file_outputter    = Log4r::FileOutputter.new("file", filename: zh_log)
+pattern_formatter =
+  Log4r::PatternFormatter.new(pattern: "%-5l -- [%d] -- %M ",
+                              date_pattern: "%F %T.%L")
+
+stderr_outputter.formatter = pattern_formatter
+file_outputter.formatter = pattern_formatter
+
+logger.outputters << stderr_outputter
+logger.outputters << file_outputter
+
+AbortIf::Abi.set_logger logger
+
+logger.debug do
+  "Version: #{ZetaHunter::VERSION}, " +
+    "Copyright: #{COPYRIGHT}, " +
+    "Contact: #{CONTACT}, " +
+    "Website: #{WEBSITE}, " +
+    "License: #{LICENSE}"
+end
+
+###############
+# set up logger
+######################################################################
+
 opts[:inaln].each do |fname|
   assert_file fname
 end
@@ -124,12 +153,12 @@ outdir_tmp = File.join opts[:outdir], "tmp"
 
 Time.time_it("Create needed directories", logger) do
 
-  abort_if File.exists?(opts[:outdir]) && !opts[:force],
-           "Outdir '#{opts[:outdir]}' already exists. Force " +
-           "overwrite with --force or choose a different outdir."
+  AbortIf::Abi.abort_if File.exists?(opts[:outdir]) && !opts[:force],
+               "Outdir '#{opts[:outdir]}' already exists. Force " +
+               "overwrite with --force or choose a different outdir."
 
   if File.exists?(opts[:outdir]) && opts[:force]
-    AbortIf.logger.info { "We will overwrite #{opts[:outdir]}" }
+    logger.info { "We will overwrite #{opts[:outdir]}" }
     FileUtils.rm_r opts[:outdir]
   end
 
@@ -152,13 +181,13 @@ Time.time_it("Write sample to file name map", logger) do
     end
   end
 
-  AbortIf.logger.debug { "Sample to fname map: #{library_to_fname_f}" }
+  logger.debug { "Sample to fname map: #{library_to_fname_f}" }
 end
 
 inaln_info = opts[:inaln].map { |fname| File.parse_fname fname }
 
 gunzip = `which gunzip`.chomp
-abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
+AbortIf::Abi.abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
 
 # ungzip in align files if needed
 opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
@@ -173,7 +202,7 @@ opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
   end
 end
 
-mothur_log = File.join opts[:outdir], "#{opts[:base]}.mothur_log.txt"
+mothur_log = File.join opts[:outdir], "#{opts[:base]}.log.mothur.txt"
 redirect_log = ">> #{mothur_log} 2>&1"
 
 chimera_dir = File.join opts[:outdir], "chimera_details"
@@ -862,20 +891,22 @@ Time.time_it("Clean up", logger) do
   FileUtils.mv(sortme_blast,
                File.join(opts[:outdir],
                          "#{opts[:base]}.all_sortmerna_db_hits.txt"))
+
+  FileUtils.mv zh_log, File.join(opts[:outdir], zh_log)
 end
 
 ##########
 # clean up
 ######################################################################
 
-AbortIf.logger.info { "FINAL FILE OUTPUTS"                           }
-AbortIf.logger.info { "Biom file:           #{biom_file}"            }
-AbortIf.logger.info { "Final OTUs:          #{final_otu_calls_f}"    }
-AbortIf.logger.info { "Denovo OTUs:         #{denovo_otus}"          }
-AbortIf.logger.info { "Closed ref OTUs:     #{distance_based_otus}"  }
-AbortIf.logger.info { "SortMeRNA output:    #{sortme_blast}"         }
-AbortIf.logger.info { "Closest DB seqs:     #{closest_seqs}"         }
-AbortIf.logger.info { "Chimeras:            #{chimeric_seqs}"        }
-AbortIf.logger.info { "Probably not zetas:  #{probably_not_zetas_f}" }
-AbortIf.logger.info { "Possibly not zetas:  #{possibly_not_zetas_f}" }
-AbortIf.logger.info { "Sample to fname map: #{library_to_fname_f}"   }
+logger.info { "FINAL FILE OUTPUTS"                           }
+logger.info { "Biom file:           #{biom_file}"            }
+logger.info { "Final OTUs:          #{final_otu_calls_f}"    }
+logger.info { "Denovo OTUs:         #{denovo_otus}"          }
+logger.info { "Closed ref OTUs:     #{distance_based_otus}"  }
+logger.info { "SortMeRNA output:    #{sortme_blast}"         }
+logger.info { "Closest DB seqs:     #{closest_seqs}"         }
+logger.info { "Chimeras:            #{chimeric_seqs}"        }
+logger.info { "Probably not zetas:  #{probably_not_zetas_f}" }
+logger.info { "Possibly not zetas:  #{possibly_not_zetas_f}" }
+logger.info { "Sample to fname map: #{library_to_fname_f}"   }

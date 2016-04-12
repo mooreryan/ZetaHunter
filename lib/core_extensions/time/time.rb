@@ -27,19 +27,3 @@ module CoreExtensions
     end
   end
 end
-
-# require "logger"
-
-# Time.extend CoreExtensions::Time
-
-# Time.time_it { sleep(2) }
-
-# logger = Logger.new(STDERR)
-
-# logger.info Time.time_it("A Not in block") { puts :a }
-# logger.info { Time.time_it("B In block") { puts :b } }
-
-# logger.level = Logger::ERROR
-
-# logger.info Time.time_it("C Not in block") { puts :c }
-# logger.info { Time.time_it("D In block") { puts :d } }
