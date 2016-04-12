@@ -82,7 +82,17 @@ end
 # set up logger
 ###############
 
-zh_log = "#{opts[:base]}.log.zh.txt"
+if File.writable?(Dir.pwd)
+  zh_log = File.join Dir.pwd, "#{opts[:base]}.log.zh.txt"
+elsif File.writable?(this_dir)
+  zh_log = File.join this_dir, "#{opts[:base]}.log.zh.txt"
+else
+  require "tempfile"
+  zh_log_f = Tempfile.new "zh_log"
+  zh_log = zh_log_f.path
+end
+zh_log_final = File.join opts[:outdir], File.basename(zh_log)
+
 logger = Log4r::Logger.new "ZH Log"
 
 stderr_outputter  = Log4r::StderrOutputter.new("stderr")
@@ -106,6 +116,9 @@ logger.debug do
     "Website: #{WEBSITE}, " +
     "License: #{LICENSE}"
 end
+
+logger.info { "Temporary log file location: #{zh_log}. If " +
+              "ZetaHunter fails to complete, the log will be here." }
 
 ###############
 # set up logger
@@ -250,7 +263,7 @@ final_otu_calls_f =
   File.join opts[:outdir], "#{opts[:base]}.otu_calls.final.txt"
 
 chimeric_seqs =
-  File.join opts[:outdir], "#{opts[:base]}.dangerous_seqs.txt"
+  File.join opts[:outdir], "#{opts[:base]}.dangerous_seqs.chimeras.txt"
 
 input_unaln = File.join outdir_tmp, "#{opts[:base]}.unaln.fa"
 sortme_blast =
@@ -741,58 +754,51 @@ biom_file =
 
 probably_not_zetas_f =
   File.join opts[:outdir],
-            "#{opts[:base]}.probably_not_zetas.txt"
-
-possibly_not_zetas_f =
-  File.join opts[:outdir],
-            "#{opts[:base]}.possibly_not_zetas.txt"
+            "#{opts[:base]}.dangerous_seqs.probably_not_zetas.txt"
 
 Time.time_it("Assign de novo OTUs", logger) do
   # TODO generate good names for new OTUs
-  File.open(possibly_not_zetas_f, "w") do |pnzf|
-    pnzf.puts %w[#SeqID Sample DBHit PID].join "\t"
-    File.open(probably_not_zetas_f, "w") do |nzf|
-      nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
+  File.open(probably_not_zetas_f, "w") do |nzf|
+    nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
 
-      File.open(denovo_otus, "w") do |f|
-        f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+    File.open(denovo_otus, "w") do |f|
+      f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
-        File.open(otu_file, "rt").each_line do |line|
-          otu, id_str = line.chomp.split "\t"
-          ids = id_str.split ","
-          otu_size = ids.count
+      File.open(otu_file, "rt").each_line do |line|
+        otu, id_str = line.chomp.split "\t"
+        ids = id_str.split ","
+        otu_size = ids.count
 
-          AbortIf::Abi.abort_if otu_size.zero?,
-                                "OTU '#{otu}' had size zero"
+        AbortIf::Abi.abort_if otu_size.zero?,
+                              "OTU '#{otu}' had size zero"
 
-          otu_calls = get_otu_calls ids, db_otu_info, input_ids
+        otu_calls = get_otu_calls ids, db_otu_info, input_ids
 
-          otu_call_counts = get_otu_call_counts otu_calls
-          otu_call = get_otu_call otu_call_counts
+        otu_call_counts = get_otu_call_counts otu_calls
+        otu_call = get_otu_call otu_call_counts
 
-          only_input_ids = ids.select { |id| input_ids.include?(id) }
+        only_input_ids = ids.select { |id| input_ids.include?(id) }
 
-          only_input_ids.each do |id|
-            AbortIf::Abi.assert_keys input_seqs, id
-            sample = input_seqs[id][:lib]
+        only_input_ids.each do |id|
+          AbortIf::Abi.assert_keys input_seqs, id
+          sample = input_seqs[id][:lib]
 
-            if otu_size == 1 && closest_to_outgroups.include?(id)
-              nzf.puts [id,
-                        sample,
-                        closed_ref_otus[id][:hit],
-                        closed_ref_otus[id][:pid]].join "\t"
-
-              logger.info { "Seq: #{id} is probably not a Zeta" }
-            else
-              AbortIf::Abi.assert_keys masked_input_seq_entropy, id
-              perc_entropy = masked_input_seq_entropy[id]
-              f.puts [id,
+          if otu_size == 1 && closest_to_outgroups.include?(id)
+            nzf.puts [id,
                       sample,
-                      otu_call,
-                      perc_entropy[:perc_total_entropy],
-                      perc_entropy[:perc_bases_in_mask],
-                      otu_call_counts.inspect].join "\t"
-            end
+                      closed_ref_otus[id][:hit],
+                      closed_ref_otus[id][:pid]].join "\t"
+
+            logger.info { "Seq: #{id} is probably not a Zeta" }
+          else
+            AbortIf::Abi.assert_keys masked_input_seq_entropy, id
+            perc_entropy = masked_input_seq_entropy[id]
+            f.puts [id,
+                    sample,
+                    otu_call,
+                    perc_entropy[:perc_total_entropy],
+                    perc_entropy[:perc_bases_in_mask],
+                    otu_call_counts.inspect].join "\t"
           end
         end
       end
@@ -903,7 +909,7 @@ Time.time_it("Clean up", logger) do
                File.join(opts[:outdir],
                          "#{opts[:base]}.all_sortmerna_db_hits.txt"))
 
-  FileUtils.mv zh_log, File.join(opts[:outdir], zh_log)
+  FileUtils.mv zh_log, zh_log_final
 end
 
 ##########
@@ -919,5 +925,6 @@ logger.info { "SortMeRNA output:    #{sortme_blast}"         }
 logger.info { "Closest DB seqs:     #{closest_seqs}"         }
 logger.info { "Chimeras:            #{chimeric_seqs}"        }
 logger.info { "Probably not zetas:  #{probably_not_zetas_f}" }
-logger.info { "Possibly not zetas:  #{possibly_not_zetas_f}" }
 logger.info { "Sample to fname map: #{library_to_fname_f}"   }
+logger.info { "ZetaHunter log:      #{zh_log_final}"         }
+logger.info { "Mothur log:          #{mothur_log}"           }
