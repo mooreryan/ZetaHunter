@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+
+use File::Spec;
+
+my @args = ();
+
+foreach my $arg (@ARGV) {
+    if ($arg =~ /^-/) {
+        push @args, $arg;
+    } else {
+        my $path = File::Spec->rel2abs($arg);
+        push @args, $path;
+    }
+}
+
+my $img = "mooreryan/zeta_hunter";
+my $zh  = "/home/ZetaHunter-0.0.2-alpha/zeta_hunter.rb";
+my $cmd = "docker run -v \"\$HOME:\$HOME\" $img ruby $zh @args";
+
+print "\n\n\nRUNNING COMMAND: $cmd\n\n\n";
+
+exec("$cmd");
