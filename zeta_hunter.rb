@@ -27,13 +27,11 @@ opts = Trollop.options do
 
   opt(:inaln,
       "Input alignment(s)",
-      type: :strings,
-      default: [TEST_ALN])
+      type: :strings)
 
   opt(:outdir,
       "Directory for output",
-      type: :string,
-      default: TEST_OUTDIR)
+      type: :string)
 
   opt(:threads,
       "Number of processors to use",
@@ -76,6 +74,14 @@ opts = Trollop.options do
   opt(:force, "Force overwriting of out directory")
 
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
+end
+
+if opts[:inaln].nil?
+  Trollop.die :inaln, "Specify an input alignment"
+end
+
+if opts[:outdir].nil?
+  Trollop.die :outdir, "Specify an output directory"
 end
 
 outdir_tmp    = File.join opts[:outdir], "tmp"
