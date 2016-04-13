@@ -78,6 +78,14 @@ opts = Trollop.options do
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 end
 
+outdir_tmp    = File.join opts[:outdir], "tmp"
+dangerous_dir = File.join opts[:outdir], "dangerous_seqs"
+otu_calls_dir = File.join opts[:outdir], "otu_calls"
+log_dir       = File.join opts[:outdir], "log"
+misc_dir      = File.join opts[:outdir], "misc"
+biom_dir      = File.join opts[:outdir], "biom"
+chimera_dir   = File.join dangerous_dir, "chimera_details"
+
 ######################################################################
 # set up logger
 ###############
@@ -91,7 +99,8 @@ else
   zh_log_f = Tempfile.new "zh_log"
   zh_log = zh_log_f.path
 end
-zh_log_final = File.join opts[:outdir], File.basename(zh_log)
+zh_log_final = File.join log_dir, File.basename(zh_log)
+mothur_log   = File.join log_dir, "#{opts[:base]}.log.mothur.txt"
 
 logger = Log4r::Logger.new "ZH Log"
 
@@ -162,8 +171,6 @@ opts[:outdir] = File.clean_fname opts[:outdir]
 # clean file names for mothur
 ######################################################################
 
-outdir_tmp = File.join opts[:outdir], "tmp"
-
 Time.time_it("Create needed directories", logger) do
 
   AbortIf::Abi.abort_if File.exists?(opts[:outdir]) && !opts[:force],
@@ -177,12 +184,18 @@ Time.time_it("Create needed directories", logger) do
 
   FileUtils.mkdir_p opts[:outdir]
   FileUtils.mkdir_p outdir_tmp
+  FileUtils.mkdir_p dangerous_dir
+  FileUtils.mkdir_p otu_calls_dir
+  FileUtils.mkdir_p log_dir
+  FileUtils.mkdir_p misc_dir
+  FileUtils.mkdir_p biom_dir
+  FileUtils.mkdir_p chimera_dir
 end
 
 # This is way up here because it should note the ORIGINAL file names
 # with the sample
 library_to_fname_f =
-  File.join opts[:outdir],
+  File.join misc_dir,
             "#{opts[:base]}.sample_id_to_fname.txt"
 
 Time.time_it("Write sample to file name map", logger) do
@@ -215,10 +228,8 @@ opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
   end
 end
 
-mothur_log = File.join opts[:outdir], "#{opts[:base]}.log.mothur.txt"
-redirect_log = ">> #{mothur_log} 2>&1"
 
-chimera_dir = File.join opts[:outdir], "chimera_details"
+redirect_log = ">> #{mothur_log} 2>&1"
 
 chimera_details =
   File.join opts[:outdir], "*.{pintail,uchime,slayer}.*"
@@ -257,24 +268,31 @@ otu_file_base =
 otu_file = ""
 
 denovo_otus =
-  File.join opts[:outdir], "#{opts[:base]}.otu_calls.denovo.txt"
+  File.join otu_calls_dir, "#{opts[:base]}.otu_calls.denovo.txt"
 
 final_otu_calls_f =
-  File.join opts[:outdir], "#{opts[:base]}.otu_calls.final.txt"
-
-chimeric_seqs =
-  File.join opts[:outdir], "#{opts[:base]}.dangerous_seqs.chimeras.txt"
-
-input_unaln = File.join outdir_tmp, "#{opts[:base]}.unaln.fa"
-sortme_blast =
-  File.join opts[:outdir], "#{opts[:base]}.unlan.sortme_blast"
-closest_seqs =
-  File.join opts[:outdir],
-            "#{opts[:base]}.closest_db_seqs.txt"
+  File.join otu_calls_dir, "#{opts[:base]}.otu_calls.final.txt"
 
 distance_based_otus =
-  File.join opts[:outdir],
-            "#{opts[:base]}.otu_calls.closed_ref.txt"
+  File.join otu_calls_dir, "#{opts[:base]}.otu_calls.closed_ref.txt"
+
+biom_file =
+  File.join biom_dir, "#{opts[:base]}.biom.txt"
+
+chimeric_seqs =
+  File.join dangerous_dir, "#{opts[:base]}.dangerous_seqs.chimeras.txt"
+
+probably_not_zetas_f =
+  File.join dangerous_dir,
+            "#{opts[:base]}.dangerous_seqs.probably_not_zetas.txt"
+
+input_unaln = File.join outdir_tmp, "#{opts[:base]}.unaln.fa"
+
+sortme_blast =
+  File.join opts[:outdir], "#{opts[:base]}.unlan.sortme_blast"
+
+closest_seqs =
+  File.join misc_dir, "#{opts[:base]}.closest_db_seqs.txt"
 
 # for SortMeRNA
 DB_SEQS_UNALN = File.join outdir_tmp, "db_seqs.unaln.fa"
@@ -748,14 +766,6 @@ Time.time_it("Find OTU file", logger) do
   logger.debug { "For OTUs, using #{otu_file}" }
 end
 
-biom_file =
-  File.join opts[:outdir],
-            "#{opts[:base]}.biom.txt"
-
-probably_not_zetas_f =
-  File.join opts[:outdir],
-            "#{opts[:base]}.dangerous_seqs.probably_not_zetas.txt"
-
 Time.time_it("Assign de novo OTUs", logger) do
   # TODO generate good names for new OTUs
   File.open(probably_not_zetas_f, "w") do |nzf|
@@ -902,11 +912,10 @@ Time.time_it("Clean up", logger) do
 
   FileUtils.rm_r outdir_tmp
 
-  FileUtils.mkdir_p chimera_dir
   FileUtils.mv Dir.glob(chimera_details), chimera_dir
 
   FileUtils.mv(sortme_blast,
-               File.join(opts[:outdir],
+               File.join(misc_dir,
                          "#{opts[:base]}.all_sortmerna_db_hits.txt"))
 
   FileUtils.mv zh_log, zh_log_final
