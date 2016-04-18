@@ -74,6 +74,8 @@ opts = Trollop.options do
   opt(:force, "Force overwriting of out directory")
 
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
+
+  opt(:debug, "Debug mode, don't delete tmp files")
 end
 
 if opts[:inaln].nil?
@@ -625,6 +627,8 @@ Time.time_it("Read SortMeRNA blast", logger) do
   end
 end
 
+puts "closed_ref_otus: #{closed_ref_otus.inspect}"
+
 Time.time_it("Write closest ref seqs and OTU calls", logger) do
   File.open(closest_seqs, "w") do |close_f|
     File.open(distance_based_otus, "w") do |otu_f|
@@ -665,20 +669,22 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
                       info[:pid],
                       info[:qcov]].join "\t"
 
-        if info[:pid] < 97.0 # will be clustered later
-          AbortIf::Abi.assert input_seqs.has_key? user_seq
-          cluster_these_user_seqs[user_seq] = input_seqs[user_seq]
+        if outgroup_names.include? info[:hit] # is nearest an outgroup
           closest_to_outgroups << user_seq
-        else
-
-          otu_f.puts [user_seq,
-                      input_seqs[user_seq][:lib],
-                      db_otu_info[info[:hit]][:otu],
-                      perc_total_entropy,
-                      perc_bases_in_mask,
-                      info[:hit],
-                      info[:pid],
-                      info[:qcov]].join "\t"
+        else # is nearest a zeta OTU
+          if info[:pid] < 97.0 # will be clustered later
+            AbortIf::Abi.assert input_seqs.has_key? user_seq
+            cluster_these_user_seqs[user_seq] = input_seqs[user_seq]
+          else # is a good closed reference call
+            otu_f.puts [user_seq,
+                        input_seqs[user_seq][:lib],
+                        db_otu_info[info[:hit]][:otu],
+                        perc_total_entropy,
+                        perc_bases_in_mask,
+                        info[:hit],
+                        info[:pid],
+                        info[:qcov]].join "\t"
+          end
         end
       end
     end
@@ -688,6 +694,8 @@ Time.time_it("Write closest ref seqs and OTU calls", logger) do
   logger.debug { "Distance based OTU calls written " +
                  "to #{distance_based_otus}" }
 end
+
+puts "closest to outgroups: #{closest_to_outgroups}"
 
 #####################################################
 # SortMeRNA distance based closed reference OTU calls
@@ -798,6 +806,9 @@ Time.time_it("Assign de novo OTUs", logger) do
         only_input_ids.each do |id|
           AbortIf::Abi.assert_keys input_seqs, id
           sample = input_seqs[id][:lib]
+
+          # TODO if an otu contains at least one seq closest to a non
+          # zeta, flag all sequences in that otu as possibly not zetas
 
           if otu_size == 1 && closest_to_outgroups.include?(id)
             nzf.puts [id,
@@ -911,12 +922,14 @@ end
 
 Time.time_it("Clean up", logger) do
 
-  FileUtils.rm Dir.glob File.join Dir.pwd, "*.tmp.uchime_formatted"
+  unless opts[:debug]
+    FileUtils.rm Dir.glob File.join Dir.pwd, "*.tmp.uchime_formatted"
 
-  FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
-  FileUtils.rm Dir.glob File.join Dir.pwd, "mothur.*.logfile"
+    FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+    FileUtils.rm Dir.glob File.join Dir.pwd, "mothur.*.logfile"
 
-  FileUtils.rm_r outdir_tmp
+    FileUtils.rm_r outdir_tmp
+  end
 
   FileUtils.mv Dir.glob(chimera_details), chimera_dir
 
