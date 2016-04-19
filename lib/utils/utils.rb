@@ -1,7 +1,9 @@
 require_relative "../abort_if/abort_if"
+require "set"
 
 module Utils
   @@usr_otu_num = 1
+  NON_GAPS = Set.new %w[A a C c T t G g U u N n]
 
   # def new_hash_of_arrays
   #   Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
@@ -32,7 +34,9 @@ module Utils
   end
 
   def gap? base
-    base.match /[^ACTGUN]/i
+    # base.match /[^ACTGUN]/i
+
+    !NON_GAPS.include?(base)
   end
 
   def get_gap_posns seq
@@ -44,7 +48,9 @@ module Utils
     these_gap_posns = []
 
     seq.each_char.with_index do |base, idx|
-      these_gap_posns << idx if gap?(base)
+      is_gap = !NON_GAPS.include?(base) # faster to avoid gap? call
+
+      these_gap_posns << idx if is_gap # gap?(base)
     end
 
     these_gap_posns
