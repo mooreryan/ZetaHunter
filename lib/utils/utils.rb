@@ -134,7 +134,6 @@ module Utils
       perc_bases_in_mask: perc_bases_in_mask }
   end
 
-  # TODO, this method takes the longest, speed it up
   def self.process_input_aln(file:, seq_ids:, seqs:, gap_posns:, lib: 0)
     FastaFile.open(file, "rt").each_record do |head, seq|
       msg = "Seq '#{head}' in file '#{file}' has length " +
@@ -356,7 +355,7 @@ module Utils
     infiles.each do |fname|
       params = "fasta=#{fname}, " +
                "reference=#{SILVA_GOLD_ALN}, " +
-               "outputdir=#{OUTDIR}, " +
+               "outputdir=#{OUT_D}, " +
                "processors=#{THREADS}"
 
       cmd = "#{MOTHUR} " +
@@ -374,7 +373,7 @@ module Utils
     infiles.each do |fname|
 
       base = File.basename(fname, File.extname(fname))
-      uchime_ids = File.join OUTDIR, "#{base}.ref.uchime.accnos"
+      uchime_ids = File.join OUT_D, "#{base}.ref.uchime.accnos"
 
       File.open(uchime_ids, "rt").each_line do |line|
         id = line.chomp
@@ -477,7 +476,6 @@ module Utils
   end
 
   def self.write_closest_ref_seqs_and_otu_calls closest_seqs_outf,
-                                                distance_based_otus_outf,
                                                 closed_ref_otus,
                                                 masked_input_seq_entropy,
                                                 input_seqs,
@@ -488,7 +486,7 @@ module Utils
     cluster_these_user_seqs = {}
 
     File.open(closest_seqs_outf, "w") do |close_f|
-      File.open(distance_based_otus_outf, "w") do |otu_f|
+      File.open(DISTANCE_BASED_OTUS_F, "w") do |otu_f|
         close_f.puts ["#SeqID",
                       "Sample",
                       "OTU",
@@ -549,8 +547,241 @@ module Utils
 
     AbortIf::Abi.logger.debug { "Closest DB seqs: #{closest_seqs_outf}" }
     AbortIf::Abi.logger.debug { "Distance based OTU calls written " +
-                                "to #{distance_based_otus_outf}" }
+                                "to #{DISTANCE_BASED_OTUS_F}" }
 
     return [closest_to_outgroups, cluster_these_user_seqs]
+  end
+
+  def self.write_cluster_me_file cluster_me_outf, cluster_these_user_seqs, db_seqs
+    File.open(cluster_me_outf, "w") do |f|
+      cluster_these_user_seqs.each do |head, seqs|
+        f.printf ">%s\n%s\n", head, seqs[:masked]
+      end
+
+      db_seqs.each do |head, seqs|
+        f.printf ">%s\n%s\n", head, seqs[:masked]
+      end
+    end
+
+    AbortIf::Abi.logger.info { "We will cluster this file: #{cluster_me_outf}" }
+  end
+
+  def self.run_mothur_distance cluster_me_f
+    cmd = "#{MOTHUR} " +
+          "'#dist.seqs(fasta=#{cluster_me_f}, " +
+          "outputdir=#{TMP_OUT_D}, " +
+          "output=lt, " +
+          "processors=#{THREADS})' " +
+          "#{Utils.redirect_log MOTHUR_LOG}"
+
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+
+    check_for_error MOTHUR_LOG
+  end
+
+  def self.run_mothur_cluster cluster_me_dist
+    cmd = "#{MOTHUR} " +
+          "'#cluster(phylip=#{cluster_me_dist}, " +
+          "method=#{CLUSTER_METHOD})' " +
+          "#{Utils.redirect_log MOTHUR_LOG}"
+
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+
+    check_for_error MOTHUR_LOG
+  end
+
+  def self.run_mothur_get_otu_list cluster_me_list
+    cmd = "#{MOTHUR} '#get.otulist(list=#{cluster_me_list})' " +
+          "#{Utils.redirect_log MOTHUR_LOG}"
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+
+    check_for_error MOTHUR_LOG
+  end
+
+  def self.find_otu_file otu_file_base
+    otu_file = ""
+    %w[03 02 01].each do |pid|
+      otu_file = "#{otu_file_base}.#{pid}.otu"
+      break if File.exists? otu_file
+      AbortIf::Abi.logger.debug { "OTU file #{otu_file} not found" }
+    end
+
+    AbortIf::Abi.abort_unless_file_exists otu_file
+    AbortIf::Abi.logger.debug { "For OTUs, using #{otu_file}" }
+
+    otu_file
+  end
+
+  def self.assign_denovo_otus otu_file,
+                              db_otu_info,
+                              input_ids,
+                              input_seqs,
+                              closest_to_outgroups,
+                              masked_input_seq_entropy
+
+    File.open(PROBABLY_NOT_ZETAS_F, "w") do |nzf|
+      nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
+
+      File.open(DENOVO_OTUS_F, "w") do |f|
+        f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+
+        File.open(otu_file, "rt").each_line do |line|
+          otu, id_str = line.chomp.split "\t"
+          ids = id_str.split ","
+          otu_size = ids.count
+
+          AbortIf::Abi.abort_if otu_size.zero?,
+                                "OTU '#{otu}' had size zero"
+
+          otu_calls = get_otu_calls ids, db_otu_info, input_ids
+
+          otu_call_counts = get_otu_call_counts otu_calls
+          otu_call = get_otu_call otu_call_counts
+
+          only_input_ids = ids.select { |id| input_ids.include?(id) }
+
+          only_input_ids.each do |id|
+            AbortIf::Abi.assert_keys input_seqs, id
+            sample = input_seqs[id][:lib]
+
+            # TODO if an otu contains at least one seq closest to a non
+            # zeta, flag all sequences in that otu as possibly not zetas
+
+            if otu_size == 1 && closest_to_outgroups.include?(id)
+              nzf.puts [id,
+                        sample,
+                        closed_ref_otus[id][:hit],
+                        closed_ref_otus[id][:pid]].join "\t"
+
+              AbortIf::Abi.logger.info { "Seq: #{id} is probably not a Zeta" }
+            else
+              AbortIf::Abi.assert_keys masked_input_seq_entropy, id
+              perc_entropy = masked_input_seq_entropy[id]
+              f.puts [id,
+                      sample,
+                      otu_call,
+                      perc_entropy[:perc_total_entropy],
+                      perc_entropy[:perc_bases_in_mask],
+                      otu_call_counts.inspect].join "\t"
+            end
+          end
+        end
+      end
+    end
+
+    AbortIf::Abi.logger.info { "seqs that probably are not Zetas: #{PROBABLY_NOT_ZETAS_F}" }
+    AbortIf::Abi.logger.info { "de novo OTU calls written to #{DENOVO_OTUS_F}" }
+
+  end
+
+  def self.write_final_otu_calls
+    File.open(FINAL_OTU_CALLS_F, "w") do |f|
+      f.puts ["#SeqID",
+              "Sample",
+              "OTU",
+              "PercEntropy",
+              "PercMaskedBases"].join "\t"
+
+      File.open(DISTANCE_BASED_OTUS_F, "rt").each_line do |line|
+        unless line.start_with? "#"
+          seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
+
+          f.puts [seq, sample, otu, ent, masked].join "\t"
+        end
+      end
+
+      File.open(DENOVO_OTUS_F, "rt").each_line do |line|
+        unless line.start_with? "#"
+          seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
+
+          f.puts [seq, sample, otu, ent, masked].join "\t"
+        end
+      end
+    end
+
+    AbortIf::Abi.logger.info { "Final OTU calls written to #{FINAL_OTU_CALLS_F}" }
+  end
+
+  def self.write_biom_file infiles
+    File.open(BIOM_F, "w") do |f|
+      sample_arr = infiles.map.with_index do |_, idx|
+        "S#{idx+1}"
+      end
+
+      otu_counts = {}
+      f.puts ["#OTU ID", sample_arr].flatten.join "\t"
+      File.open(FINAL_OTU_CALLS_F).each_line do |line|
+        unless line.start_with? "#"
+          seqid, sample, otu, _, _ = line.chomp.split "\t"
+
+          if otu_counts.has_key? otu
+            if otu_counts[otu].has_key? sample
+              otu_counts[otu][sample] += 1
+            else
+              otu_counts[otu][sample] = 1
+            end
+          else
+            otu_counts[otu] = { sample => 1 }
+          end
+        end
+      end
+
+      otu_counts.each do |otu, info|
+        sample_counts = sample_arr.map do |key|
+          if info.has_key? key
+            count = info[key]
+          else
+            count = 0
+          end
+
+        end
+
+        f.puts [otu, sample_counts].join "\t"
+      end
+    end
+  end
+
+  def self.clean_up sortme_blast
+    FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
+
+    FileUtils.rm Dir.glob File.join OUT_D, "mothur.*.logfile"
+    FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
+
+    FileUtils.rm_r TMP_OUT_D
+
+    FileUtils.mv Dir.glob(CHIMERA_DETAILS), CHIMERA_D
+
+    FileUtils.mv(sortme_blast,
+                 File.join(MISC_DIR,
+                           "#{BASE}.all_sortmerna_db_hits.txt"))
+
+    FileUtils.mv ZH_LOG, ZH_LOG_FINAL
+  end
+
+  def self.create_needed_dirs
+
+    AbortIf::Abi.abort_if File.exists?(OUT_D) && !FORCE,
+                          "Outdir '#{OUT_D}' already exists. Force " +
+                          "overwrite with --force or choose a different outdir."
+
+    if File.exists?(OUT_D) && FORCE
+      AbortIf::Abi.abort_if OUT_D == "/",
+                            "I wouldn't overwrite that if I were you...."
+      AbortIf::Abi.abort_unless File.writable?(OUT_D)
+      AbortIf::Abi.logger.info { "We will overwrite #{OUT_D}" }
+      FileUtils.rm_r OUT_D
+    end
+
+    FileUtils.mkdir_p BIOM_D
+    FileUtils.mkdir_p CHIMERA_D
+    FileUtils.mkdir_p DANGEROUS_D
+    FileUtils.mkdir_p LOG_D
+    FileUtils.mkdir_p MISC_DIR
+    FileUtils.mkdir_p OTU_CALLS_D
+    FileUtils.mkdir_p OUT_D
+    FileUtils.mkdir_p TMP_OUT_D
   end
 end
