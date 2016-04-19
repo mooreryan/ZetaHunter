@@ -11,6 +11,8 @@ Hash.include CoreExtensions::Hash
 
 this_dir = File.dirname(__FILE__)
 
+gunzip = Utils.which_gunzip
+
 require "trollop"
 
 opts = Trollop.options do
@@ -78,6 +80,12 @@ opts = Trollop.options do
   opt(:debug, "Debug mode, don't delete tmp files")
 end
 
+THREADS = opts[:threads]
+MOTHUR  = opts[:mothur]
+INDEXDB_RNA = opts[:indexdb_rna]
+SORTME_RNA = opts[:sortmerna]
+
+
 if opts[:inaln].nil?
   Trollop.die :inaln, "Specify an input alignment"
 end
@@ -108,7 +116,7 @@ else
   zh_log = zh_log_f.path
 end
 zh_log_final = File.join log_dir, File.basename(zh_log)
-mothur_log   = File.join log_dir, "#{opts[:base]}.log.mothur.txt"
+MOTHUR_LOG   = File.join log_dir, "#{opts[:base]}.log.mothur.txt"
 
 logger = Log4r::Logger.new "ZH Log"
 
@@ -148,12 +156,12 @@ end
 AbortIf::Abi.abort_unless_file_exists opts[:db_otu_info]
 AbortIf::Abi.abort_unless_file_exists opts[:mask]
 AbortIf::Abi.abort_unless_file_exists opts[:db_seqs]
-AbortIf::Abi.abort_unless_file_exists opts[:mothur]
-AbortIf::Abi.abort_unless_file_exists opts[:sortmerna]
-AbortIf::Abi.abort_unless_file_exists opts[:indexdb_rna]
+AbortIf::Abi.abort_unless_file_exists MOTHUR
+AbortIf::Abi.abort_unless_file_exists SORTME_RNA
+AbortIf::Abi.abort_unless_file_exists INDEXDB_RNA
 
-msg = "--threads must be > 0, was #{opts[:threads]}"
-AbortIf::Abi.abort_unless opts[:threads] > 0, msg
+msg = "--threads must be > 0, was #{THREADS}"
+AbortIf::Abi.abort_unless THREADS > 0, msg
 
 check = %w[furthest average nearest].one? do |opt|
   opts[:cluster_method] == opt
@@ -175,22 +183,24 @@ opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
 
 opts[:outdir] = File.clean_fname opts[:outdir]
 
+OUTDIR = opts[:outdir]
+
 #############################
 # clean file names for mothur
 ######################################################################
 
 Time.time_it("Create needed directories", logger) do
 
-  AbortIf::Abi.abort_if File.exists?(opts[:outdir]) && !opts[:force],
-               "Outdir '#{opts[:outdir]}' already exists. Force " +
+  AbortIf::Abi.abort_if File.exists?(OUTDIR) && !opts[:force],
+               "Outdir '#{OUTDIR}' already exists. Force " +
                "overwrite with --force or choose a different outdir."
 
-  if File.exists?(opts[:outdir]) && opts[:force]
-    logger.info { "We will overwrite #{opts[:outdir]}" }
-    FileUtils.rm_r opts[:outdir]
+  if File.exists?(OUTDIR) && opts[:force]
+    logger.info { "We will overwrite #{OUTDIR}" }
+    FileUtils.rm_r OUTDIR
   end
 
-  FileUtils.mkdir_p opts[:outdir]
+  FileUtils.mkdir_p OUTDIR
   FileUtils.mkdir_p outdir_tmp
   FileUtils.mkdir_p dangerous_dir
   FileUtils.mkdir_p otu_calls_dir
@@ -207,59 +217,34 @@ library_to_fname_f =
             "#{opts[:base]}.sample_id_to_fname.txt"
 
 Time.time_it("Write sample to file name map", logger) do
-  File.open(library_to_fname_f, "w") do |f|
-    f.puts %w[#Sample FileName].join "\t"
-
-    opts[:inaln].each_with_index do |fname, idx|
-      f.puts ["S#{idx+1}", fname].join "\t"
-    end
-  end
-
-  logger.debug { "Sample to fname map: #{library_to_fname_f}" }
+  Utils.write_sample_to_file_name_map library_to_fname_f, opts[:inaln]
 end
 
-inaln_info = opts[:inaln].map { |fname| File.parse_fname fname }
-
-gunzip = `which gunzip`.chomp
-AbortIf::Abi.abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
-
-# ungzip in align files if needed
-opts[:inaln] = opts[:inaln].map.with_index do |fname, idx|
-  if fname.match(/.gz$/)
-    inaln_not_gz = File.join outdir_tmp, "#{inaln_info[idx][:base]}.not_gz.fa"
-    cmd = "#{gunzip} -c #{fname} > #{inaln_not_gz}"
-    log_cmd logger, cmd
-    Process.run_it! cmd
-    inaln_info[idx] = inaln_not_gz
-  else
-    fname
-  end
+Time.time_it("Unzip if needed", logger) do
+  opts[:inaln] = Utils.ungzip_if_needed opts[:inaln], outdir_tmp
 end
-
-
-redirect_log = ">> #{mothur_log} 2>&1"
 
 chimera_details =
-  File.join opts[:outdir], "*.{pintail,uchime,slayer}.*"
+  File.join OUTDIR, "*.{pintail,uchime,slayer}.*"
 
 inaln_nogaps = File.join outdir_tmp,
                          "#{opts[:base]}.nogaps.fa"
 
-slayer_chimera_info = File.join opts[:outdir],
+slayer_chimera_info = File.join OUTDIR,
                                 "#{opts[:base]}" +
                                 ".slayer.chimeras"
-slayer_ids = File.join opts[:outdir],
+slayer_ids = File.join OUTDIR,
                        "#{opts[:base]}" +
                        ".slayer.accnos"
 
-uchime_chimera_info = File.join opts[:outdir],
+uchime_chimera_info = File.join OUTDIR,
                                 "#{opts[:base]}" +
                                 ".ref.uchime.chimeras"
 
-pintail_chimera_info = File.join opts[:outdir],
+pintail_chimera_info = File.join OUTDIR,
                                 "#{opts[:base]}" +
                                 ".pintail.chimeras"
-pintail_ids = File.join opts[:outdir],
+pintail_ids = File.join OUTDIR,
                        "#{opts[:base]}" +
                        ".pintail.accnos"
 
@@ -297,7 +282,7 @@ probably_not_zetas_f =
 input_unaln = File.join outdir_tmp, "#{opts[:base]}.unaln.fa"
 
 sortme_blast =
-  File.join opts[:outdir], "#{opts[:base]}.unlan.sortme_blast"
+  File.join OUTDIR, "#{opts[:base]}.unlan.sortme_blast"
 
 closest_seqs =
   File.join misc_dir, "#{opts[:base]}.closest_db_seqs.txt"
@@ -311,7 +296,7 @@ SORTMERNA_IDX = File.join outdir_tmp, "db_seqs.unaln.idx"
 # FOR TEST ONLY -- remove outdir before running
 ###############################################
 
-# cmd = "rm -r #{opts[:outdir]}"
+# cmd = "rm -r #{OUTDIR}"
 # log_cmd logger, cmd
 # Process.run_it cmd
 
@@ -346,16 +331,10 @@ total_entropy            = 0
 ##############################
 
 Time.time_it("Process input data", logger) do
-  opts[:inaln].each_with_index do |fname, idx|
-    process_input_aln file: fname,
-                      seq_ids: input_ids,
-                      seqs: input_seqs,
-                      gap_posns: gap_posns,
-                      lib: "S#{idx+1}"
-  end
-
-  AbortIf::Abi.abort_if input_seqs.empty?,
-                        "Did not find any input seqs"
+  Utils.process_input_alns files: opts[:inaln],
+                           seq_ids: input_ids,
+                           seqs: input_seqs,
+                           gap_posns: gap_posns
 end
 
 ##############################
@@ -373,21 +352,17 @@ end
 
 Time.time_it("Read db OTU metadata", logger) do
   db_otu_info = read_otu_metadata opts[:db_otu_info]
-  # logger.debug { "DB OTU INFO: #{db_otu_info.inspect}" }
 end
 
 Time.time_it("Read mask info", logger) do
   mask = read_mask opts[:mask]
-  logger.debug { "Num mask bases: #{mask.count}" }
 end
 
 Time.time_it("Update shared gap posns with db seqs", logger) do
-  process_input_aln file: opts[:db_seqs],
+  Utils.process_input_aln file: opts[:db_seqs],
                     seq_ids: db_seq_ids,
                     seqs: db_seqs,
                     gap_posns: gap_posns
-
-  AbortIf::Abi.abort_if db_seqs.empty?, "Did not find any DB seqs"
 end
 
 Time.time_it("Read outgroups", logger) do
@@ -407,8 +382,6 @@ shared_gap_posns = gap_posns.reduce(:&)
 Time.time_it("Degap and mask", logger) do
   update_with_degapped_and_mask input_seqs, mask, shared_gap_posns
   update_with_degapped_and_mask db_seqs, mask, shared_gap_posns
-
-  AbortIf::Abi.assert_keys input_seqs.first.last, :masked, :degapped
 end
 
 ##############
@@ -420,13 +393,7 @@ end
 #########################
 
 Time.time_it("Get entropy for masked user seqs", logger) do
-  input_seqs.each do |head, seqs|
-    msg = "Seq '#{head}' is repeated in masked_input_seq_entropy"
-    AbortIf::Abi.abort_if masked_input_seq_entropy.has_key?(head), msg
-
-    seq_entropy = get_seq_entropy seqs[:masked], entropy
-    masked_input_seq_entropy[head] = seq_entropy
-  end
+  masked_input_seq_entropy = Utils.get_entropy_for_seqs entropy, input_seqs
 end
 
 #########################
@@ -443,105 +410,23 @@ if opts[:check_chimeras]
   # unzip the silva gold aln
   ##########################
 
-  SILVA_GOLD_ALN = File.join outdir_tmp, "silva.gold.align"
-  cmd = "#{gunzip} -c #{SILVA_GOLD_ALN_GZ} > #{SILVA_GOLD_ALN}"
-  log_cmd logger, cmd
-  Process.run_it! cmd
+  SILVA_GOLD_ALN = Utils.unzip_silva_gold_aln outdir_tmp
 
   ##########################
   # unzip the silva gold aln
   ####################################################################
 
-  # mothur params
-  mothur_params = opts[:inaln].map do |fname|
-    "fasta=#{fname}, " +
-      "reference=#{SILVA_GOLD_ALN}, " +
-      "outputdir=#{opts[:outdir]}, " +
-      "processors=#{opts[:threads]}"
-  end
-
-  # Time.time_it("Chimera Slayer", logger) do
-  #   # in must be same length as reference
-  #   cmd = "#{opts[:mothur]} " +
-  #         "'#chimera.slayer(#{mothur_params})' " + # TODO update for multi files
-  #         "#{redirect_log}"
-  #   log_cmd logger, cmd
-  #   Process.run_it! cmd
-  # end
-
-  # Time.time_it("Read slayer chimeras", logger) do
-  #   File.open(slayer_ids, "rt").each_line do |line|
-  #     id = line.chomp
-  #     chimeric_ids.store_in_array id, "ChimeraSlayer"
-
-  #     logger.debug { "Chimera Slayer flagged #{id}" }
-  #   end
-  # end
-
   Time.time_it("Uchime", logger) do
-    mothur_params.each do |params|
-      cmd = "#{opts[:mothur]} " +
-            "'#chimera.uchime(#{params})' " +
-            "#{redirect_log}"
-      log_cmd logger, cmd
-      Process.run_it! cmd
-
-      check_for_error mothur_log
-    end
+    Utils.run_uchime opts[:inaln]
   end
 
   # There will be one uchime_ids file per opts[:inaln] fname
   Time.time_it("Read uchime chimeras", logger) do
-    opts[:inaln].each do |fname|
-
-      base = File.basename(fname, File.extname(fname))
-      uchime_ids = File.join opts[:outdir], "#{base}.ref.uchime.accnos"
-
-      File.open(uchime_ids, "rt").each_line do |line|
-        id = line.chomp
-        chimeric_ids.store_in_array id, "uchime"
-
-        logger.debug { "Uchime flagged #{id}" }
-      end
-    end
+    Utils.read_uchime_chimeras opts[:inaln], chimeric_ids
   end
 
-
-  # Time.time_it("Pintail", logger) do
-  #   cmd = "#{opts[:mothur]} " +
-  #         "'#chimera.pintail(fasta=#{opts[:inaln]}, " + # TODO HEHE
-  #         "template=#{SILVA_GOLD_ALN}, " +
-  #         "conservation=#{SILVA_FREQ}, " +
-  #         "quantile=#{SILVA_QUAN}, " +
-  #         "outputdir=#{opts[:outdir]}, " +
-  #         "processors=#{opts[:threads]})' " +
-  #         "#{redirect_log}"
-  #   log_cmd logger, cmd
-  #   Process.run_it! cmd
-  # end
-
-  # Time.time_it("Read Pintail chimeras", logger) do
-  #   File.open(pintail_ids, "rt").each_line do |line|
-  #     id = line.chomp
-  #     chimeric_ids.store_in_array id, "Pintail"
-
-  #     logger.debug { "Pintail flagged #{id}" }
-  #   end
-  # end
-
   Time.time_it("Write chimeric seqs", logger) do
-    File.open(chimeric_seqs, "w") do |f|
-      f.puts %w[#SeqID Sample ChimeraChecker].join "\t"
-
-      chimeric_ids.sort_by { |k, v| k }.each do |id, software|
-        clean_id = clean(id)
-        AbortIf::Abi.assert_keys input_seqs, clean_id
-        sample = input_seqs[clean_id][:lib]
-        f.puts [clean_id, sample, software.sort.join(",")].join "\t"
-      end
-    end
-
-    logger.info { "Chimeric seqs written to #{chimeric_seqs}" }
+    Utils.write_chimeric_seqs chimeric_ids, chimeric_seqs, input_seqs
   end
 end
 
@@ -555,147 +440,37 @@ end
 
 
 Time.time_it("Unalign DB seqs if needed", logger) do
-
-
-  File.open(DB_SEQS_UNALN, "w") do |f|
-    FastaFile.open(DB_SEQS, "rt").each_record do |head, seq|
-      f.puts ">#{clean(head.split(" ").first)}"
-      f.puts remove_all_gaps(seq)
-    end
-  end
-
-  logger.debug { "Aligned DB seqs: #{DB_SEQS}" }
-  logger.debug { "Unaligned DB seqs: #{DB_SEQS_UNALN}" }
+  Utils.unalign_seqs_from_file DB_SEQS, DB_SEQS_UNALN
 end
 
 Time.time_it("Unalign input seqs", logger) do
-  File.open(input_unaln, "w") do |f|
-    input_seqs.each do |head, seq|
-      f.puts ">#{head}"
-      f.puts remove_all_gaps(seq[:orig])
-    end
-  end
+  Utils.unalign_seqs_from_input_seqs input_seqs,input_unaln
 end
 
 # TODO only do this if it doesn't already exist
 Time.time_it("Build SortMeRNA index", logger) do
-  AbortIf::Abi.abort_unless_file_exists DB_SEQS_UNALN
-
-  cmd = "#{opts[:indexdb_rna]} " +
-        "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
-
-  log_cmd logger, cmd
-  Process.run_it! cmd
+  Utils.build_sortmerna_idx
 end
 
 Time.time_it("SortMeRNA", logger) do
-  cmd = "#{opts[:sortmerna]} " +
-        "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
-        "--reads #{input_unaln} " +
-        "--aligned #{sortme_blast} " +
-        "--blast '1 qcov' " +
-        "--num_alignments 0"
-
-  # sort me rna adds .blast to the output base
-  sortme_blast += ".blast"
-
-  log_cmd logger, cmd
-  Process.run_it! cmd
-  logger.debug { "SortMeRNA blast: #{sortme_blast}" }
+  sortme_blast = Utils.run_sortmerna input_unaln, sortme_blast
 end
 
 # TODO double check that this doesn't assume one hit per query
 Time.time_it("Read SortMeRNA blast", logger) do
-  File.open(sortme_blast, "rt").each_line do |line|
-    user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
-
-    pid = pid.to_f
-    qcov = rest.last.to_f
-
-    if qcov >= MIN_QCOV
-      insert_new_entry =
-        (closed_ref_otus.has_key?(user_seq) &&
-         closed_ref_otus[user_seq][:pid] < pid) ||
-        !closed_ref_otus.has_key?(user_seq)
-
-      if insert_new_entry
-        closed_ref_otus[user_seq] = { hit: db_seq_hit,
-                                      pid: pid,
-                                      qcov: qcov }
-      end
-    end
-  end
+  closed_ref_otus = Utils.read_sortme_blast sortme_blast
 end
-
-puts "closed_ref_otus: #{closed_ref_otus.inspect}"
 
 Time.time_it("Write closest ref seqs and OTU calls", logger) do
-  File.open(closest_seqs, "w") do |close_f|
-    File.open(distance_based_otus, "w") do |otu_f|
-      close_f.puts ["#SeqID",
-                    "Sample",
-                    "OTU",
-                    "PercEntropy",
-                    "PercMaskedBases",
-                    "Hit",
-                    "PID",
-                    "QCov"].join "\t"
-
-      otu_f.puts ["#SeqID",
-                  "Sample",
-                  "OTU",
-                  "PercEntropy",
-                  "PercMaskedBases",
-                  "Hit",
-                  "PID",
-                  "QCov"].join "\t"
-
-      closed_ref_otus.each do |user_seq, info|
-        AbortIf::Abi.assert_keys masked_input_seq_entropy, user_seq
-        AbortIf::Abi.assert_keys input_seqs, user_seq
-
-        perc_total_entropy =
-          masked_input_seq_entropy[user_seq][:perc_total_entropy]
-        perc_bases_in_mask =
-          masked_input_seq_entropy[user_seq][:perc_bases_in_mask]
-
-        # TODO assert db_otu_info.keys contains info[:hit]
-        close_f.puts [user_seq,
-                      input_seqs[user_seq][:lib],
-                      db_otu_info[info[:hit]][:otu],
-                      perc_total_entropy,
-                      perc_bases_in_mask,
-                      info[:hit],
-                      info[:pid],
-                      info[:qcov]].join "\t"
-
-        if outgroup_names.include? info[:hit] # is nearest an outgroup
-          closest_to_outgroups << user_seq
-        else # is nearest a zeta OTU
-          if info[:pid] < 97.0 # will be clustered later
-            AbortIf::Abi.assert input_seqs.has_key? user_seq
-            cluster_these_user_seqs[user_seq] = input_seqs[user_seq]
-          else # is a good closed reference call
-            otu_f.puts [user_seq,
-                        input_seqs[user_seq][:lib],
-                        db_otu_info[info[:hit]][:otu],
-                        perc_total_entropy,
-                        perc_bases_in_mask,
-                        info[:hit],
-                        info[:pid],
-                        info[:qcov]].join "\t"
-          end
-        end
-      end
-    end
-  end
-
-  logger.debug { "Closest DB seqs: #{closest_seqs}" }
-  logger.debug { "Distance based OTU calls written " +
-                 "to #{distance_based_otus}" }
+  closest_to_outgroups, cluster_these_user_seqs =
+                        Utils.write_closest_ref_seqs_and_otu_calls(closest_seqs,
+                                                                   distance_based_otus,
+                                                                   closed_ref_otus,
+                                                                   masked_input_seq_entropy,
+                                                                   input_seqs,
+                                                                   db_otu_info,
+                                                                   outgroup_names)
 end
-
-puts "closest to outgroups: #{closest_to_outgroups}"
 
 #####################################################
 # SortMeRNA distance based closed reference OTU calls
@@ -724,41 +499,41 @@ Time.time_it("Write masked, combined fasta", logger) do
 end
 
 Time.time_it("Distance", logger) do
-  cmd = "#{opts[:mothur]} " +
+  cmd = "#{MOTHUR} " +
         "'#dist.seqs(fasta=#{cluster_me}, " +
         "outputdir=#{outdir_tmp}, " +
         "output=lt, " +
-        "processors=#{opts[:threads]})' " +
-        "#{redirect_log}"
+        "processors=#{THREADS})' " +
+        "#{Utils.redirect_log MOTHUR_LOG}"
 
   log_cmd logger, cmd
   Process.run_it! cmd
 
-  check_for_error mothur_log
+  check_for_error MOTHUR_LOG
 end
 
 # warn "EMERGENCY BRAKE ENGAGED!"
 # exit
 
 Time.time_it("Cluster", logger) do
-  cmd = "#{opts[:mothur]} " +
+  cmd = "#{MOTHUR} " +
         "'#cluster(phylip=#{cluster_me_dist}, " +
         "method=#{opts[:cluster_method]})' " +
-        "#{redirect_log}"
+        "#{Utils.redirect_log MOTHUR_LOG}"
 
   log_cmd logger, cmd
   Process.run_it! cmd
 
-  check_for_error mothur_log
+  check_for_error MOTHUR_LOG
 end
 
 Time.time_it("Get OTU list", logger) do
-  cmd = "#{opts[:mothur]} '#get.otulist(list=#{cluster_me_list})' " +
-        "#{redirect_log}"
+  cmd = "#{MOTHUR} '#get.otulist(list=#{cluster_me_list})' " +
+        "#{Utils.redirect_log MOTHUR_LOG}"
   log_cmd logger, cmd
   Process.run_it! cmd
 
-  check_for_error mothur_log
+  check_for_error MOTHUR_LOG
 end
 
 #########
@@ -925,7 +700,7 @@ Time.time_it("Clean up", logger) do
   unless opts[:debug]
     FileUtils.rm Dir.glob File.join Dir.pwd, "*.tmp.uchime_formatted"
 
-    FileUtils.rm Dir.glob File.join opts[:outdir], "mothur.*.logfile"
+    FileUtils.rm Dir.glob File.join OUTDIR, "mothur.*.logfile"
     FileUtils.rm Dir.glob File.join Dir.pwd, "mothur.*.logfile"
 
     FileUtils.rm_r outdir_tmp
@@ -955,4 +730,4 @@ logger.info { "Chimeras:            #{chimeric_seqs}"        }
 logger.info { "Probably not zetas:  #{probably_not_zetas_f}" }
 logger.info { "Sample to fname map: #{library_to_fname_f}"   }
 logger.info { "ZetaHunter log:      #{zh_log_final}"         }
-logger.info { "Mothur log:          #{mothur_log}"           }
+logger.info { "Mothur log:          #{MOTHUR_LOG}"           }

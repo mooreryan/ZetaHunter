@@ -14,3 +14,7 @@ assets/for_entropy
 test_files/full_and_part_output
 
 *log*
+
+test_files/both_out/
+diffout
+lib/old_zh_code.rb

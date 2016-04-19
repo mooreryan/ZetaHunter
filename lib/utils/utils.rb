@@ -128,7 +128,8 @@ module Utils
       perc_bases_in_mask: perc_bases_in_mask }
   end
 
-  def process_input_aln(file:, seq_ids:, seqs:, gap_posns:, lib: 0)
+  # TODO, this method takes the longest, speed it up
+  def self.process_input_aln(file:, seq_ids:, seqs:, gap_posns:, lib: 0)
     FastaFile.open(file, "rt").each_record do |head, seq|
       msg = "Seq '#{head}' in file '#{file}' has length " +
             "'#{seq.length}'. Should be '#{Const::SILVA_ALN_LEN}'"
@@ -149,8 +150,23 @@ module Utils
       AbortIf::Abi.abort_if seqs[id][:orig].match(/U/i),
                             "Seq '#{id}' looks like RNA, should be DNA"
 
+      AbortIf::Abi.abort_if seqs.empty? { "Did not find any seqs in file '#{file}'" }
+
       update_gap_posns gap_posns, seq
     end
+  end
+
+  def self.process_input_alns(files:, seq_ids:, seqs:, gap_posns:)
+    files.each_with_index do |fname, idx|
+      Utils.process_input_aln file: fname,
+                              seq_ids: seq_ids,
+                              seqs: seqs,
+                              gap_posns: gap_posns,
+                              lib: "S#{idx+1}"
+    end
+
+    AbortIf::Abi.abort_if seq_ids.empty?,
+                          "Did not find any input seqs"
   end
 
   def read_mask fname
@@ -168,6 +184,8 @@ module Utils
         mask_positions << idx if char == "*"
       end
     end
+
+    AbortIf::Abi.logger.info { "Num mask bases: #{mask_positions.count}" }
 
     mask_positions
   end
@@ -225,6 +243,8 @@ module Utils
 
       seqs[head][:masked] = masked
       seqs[head][:degapped] = degapped
+
+      AbortIf::Abi.assert_keys seqs.first.last, :masked, :degapped
     end
   end
 
@@ -254,5 +274,277 @@ module Utils
     AbortIf::Abi.abort_if(File.read(mothur_log).include?("ERROR"),
                           "Mothur exited with an error. " +
                           "Check #{mothur_log} for details.")
+  end
+
+  def self.write_sample_to_file_name_map library_to_fname_f, infiles
+    File.open(library_to_fname_f, "w") do |f|
+      f.puts %w[#Sample FileName].join "\t"
+
+      infiles.each_with_index do |fname, idx|
+        f.puts ["S#{idx+1}", fname].join "\t"
+      end
+    end
+
+    AbortIf::Abi.logger.debug { "Sample to fname map: #{library_to_fname_f}" }
+  end
+
+  def self.which_gunzip
+    gunzip = `which gunzip`.chomp
+    AbortIf::Abi.abort_unless $?.exitstatus.zero?, "Cannot find gunzip command"
+
+    gunzip
+  end
+
+  def self.ungzip_if_needed infiles, outdir
+    inaln_info = infiles.map { |fname| File.parse_fname fname }
+
+    gunzip = self.which_gunzip
+
+    new_infiles = infiles.map.with_index do |fname, idx|
+      if fname.match(/.gz$/)
+        inaln_not_gz = File.join outdir, "#{inaln_info[idx][:base]}.not_gz.fa"
+        cmd = "#{gunzip} -c #{fname} > #{inaln_not_gz}"
+        log_cmd AbortIf::Abi.logger, cmd
+        Process.run_it! cmd
+
+        inaln_not_gz
+      else
+        fname
+      end
+    end
+
+    new_infiles
+  end
+
+  def self.get_entropy_for_seqs entropy, sequences
+    seq_entropys = {}
+    seq_entropy = 0
+
+    sequences.each do |head, seqs|
+      msg = "Seq '#{head}' is repeated"
+      AbortIf::Abi.abort_if seq_entropys.has_key?(head), msg
+      AbortIf::Abi.refute seqs[:masked].empty?, "seqs[:masked] is empty"
+
+      seq_entropy = get_seq_entropy seqs[:masked], entropy
+      seq_entropys[head] = seq_entropy
+    end
+
+    seq_entropys
+  end
+
+  def self.unzip_silva_gold_aln outdir
+    silva_gold_aln = File.join outdir, "silva.gold.align"
+    cmd = "#{self.which_gunzip} -c #{Const::SILVA_GOLD_ALN_GZ} > #{silva_gold_aln}"
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+
+    AbortIf::Abi.abort_unless_file_exists silva_gold_aln
+    silva_gold_aln
+  end
+
+  def self.redirect_log mothur_log
+    ">> #{mothur_log} 2>&1"
+  end
+
+  def self.run_uchime infiles
+    infiles.each do |fname|
+      params = "fasta=#{fname}, " +
+               "reference=#{SILVA_GOLD_ALN}, " +
+               "outputdir=#{OUTDIR}, " +
+               "processors=#{THREADS}"
+
+      cmd = "#{MOTHUR} " +
+            "'#chimera.uchime(#{params})' " +
+            "#{self.redirect_log MOTHUR_LOG}"
+
+      log_cmd AbortIf::Abi.logger, cmd
+      Process.run_it! cmd
+
+      check_for_error MOTHUR_LOG
+    end
+  end
+
+  def self.read_uchime_chimeras infiles, chimeric_ids
+    infiles.each do |fname|
+
+      base = File.basename(fname, File.extname(fname))
+      uchime_ids = File.join OUTDIR, "#{base}.ref.uchime.accnos"
+
+      File.open(uchime_ids, "rt").each_line do |line|
+        id = line.chomp
+        chimeric_ids.store_in_array id, "uchime"
+
+        AbortIf::Abi.logger.debug { "Uchime flagged #{id}" }
+      end
+    end
+  end
+
+  def self.write_chimeric_seqs chimeric_ids, chimeric_seqs_outf, input_seqs
+    File.open(chimeric_seqs_outf, "w") do |f|
+      f.puts %w[#SeqID Sample ChimeraChecker].join "\t"
+
+      chimeric_ids.sort_by { |k, v| k }.each do |id, software|
+        clean_id = clean(id)
+        AbortIf::Abi.assert_keys input_seqs, clean_id
+        sample = input_seqs[clean_id][:lib]
+        f.puts [clean_id, sample, software.sort.join(",")].join "\t"
+      end
+    end
+
+    AbortIf::Abi.logger.info { "Chimeric seqs written to #{chimeric_seqs_outf}" }
+  end
+
+  def self.unalign_seqs_from_file inaln, outfile
+    File.open(outfile, "w") do |f|
+      FastaFile.open(inaln).each_record_fast do |head, seq|
+        f.puts ">#{clean(head.split(" ").first)}"
+        f.puts remove_all_gaps(seq)
+
+      end
+    end
+
+    AbortIf::Abi.logger.debug { "Aligned DB seqs: #{inaln}" }
+    AbortIf::Abi.logger.debug { "Unaligned DB seqs: #{outfile}" }
+  end
+
+  def self.unalign_seqs_from_input_seqs input_seqs, outfile
+    File.open(outfile, "w") do |f|
+      input_seqs.each do |head, seq|
+        f.puts ">#{head}"
+        f.puts remove_all_gaps(seq[:orig])
+      end
+    end
+  end
+
+  def self.build_sortmerna_idx
+    AbortIf::Abi.abort_unless_file_exists DB_SEQS_UNALN
+
+    cmd = "#{INDEXDB_RNA} " +
+          "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX}"
+
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+  end
+
+  def self.run_sortmerna input_unaln, sortme_blast
+    cmd = "#{SORTME_RNA} " +
+          "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
+          "--reads #{input_unaln} " +
+          "--aligned #{sortme_blast} " +
+          "--blast '1 qcov' " +
+          "--num_alignments 0"
+
+    # sort me rna adds .blast to the output base
+    sortme_blast += ".blast"
+
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+    AbortIf::Abi.logger.debug { "SortMeRNA blast: #{sortme_blast}" }
+
+    sortme_blast
+  end
+
+  def self.read_sortme_blast sortme_blast
+    closed_ref_otus = {}
+
+    File.open(sortme_blast, "rt").each_line do |line|
+      user_seq, db_seq_hit, pid, *rest = line.chomp.split "\t"
+
+      pid = pid.to_f
+      qcov = rest.last.to_f
+
+      if qcov >= MIN_QCOV
+        insert_new_entry =
+          (closed_ref_otus.has_key?(user_seq) &&
+           closed_ref_otus[user_seq][:pid] < pid) ||
+          !closed_ref_otus.has_key?(user_seq)
+
+        if insert_new_entry
+          closed_ref_otus[user_seq] = { hit: db_seq_hit,
+                                        pid: pid,
+                                        qcov: qcov }
+        end
+      end
+    end
+
+    closed_ref_otus
+  end
+
+  def self.write_closest_ref_seqs_and_otu_calls closest_seqs_outf,
+                                                distance_based_otus_outf,
+                                                closed_ref_otus,
+                                                masked_input_seq_entropy,
+                                                input_seqs,
+                                                db_otu_info,
+                                                outgroup_names
+
+    closest_to_outgroups = []
+    cluster_these_user_seqs = {}
+
+    File.open(closest_seqs_outf, "w") do |close_f|
+      File.open(distance_based_otus_outf, "w") do |otu_f|
+        close_f.puts ["#SeqID",
+                      "Sample",
+                      "OTU",
+                      "PercEntropy",
+                      "PercMaskedBases",
+                      "Hit",
+                      "PID",
+                      "QCov"].join "\t"
+
+        otu_f.puts ["#SeqID",
+                    "Sample",
+                    "OTU",
+                    "PercEntropy",
+                    "PercMaskedBases",
+                    "Hit",
+                    "PID",
+                    "QCov"].join "\t"
+
+        closed_ref_otus.each do |user_seq, info|
+          AbortIf::Abi.assert_keys masked_input_seq_entropy, user_seq
+          AbortIf::Abi.assert_keys input_seqs, user_seq
+
+          perc_total_entropy =
+            masked_input_seq_entropy[user_seq][:perc_total_entropy]
+          perc_bases_in_mask =
+            masked_input_seq_entropy[user_seq][:perc_bases_in_mask]
+
+          # TODO assert db_otu_info.keys contains info[:hit]
+          close_f.puts [user_seq,
+                        input_seqs[user_seq][:lib],
+                        db_otu_info[info[:hit]][:otu],
+                        perc_total_entropy,
+                        perc_bases_in_mask,
+                        info[:hit],
+                        info[:pid],
+                        info[:qcov]].join "\t"
+
+          if outgroup_names.include? info[:hit] # is nearest an outgroup
+            closest_to_outgroups << user_seq # is output
+          else # is nearest a zeta OTU
+            if info[:pid] < 97.0 # will be clustered later
+              AbortIf::Abi.assert input_seqs.has_key? user_seq
+              cluster_these_user_seqs[user_seq] = input_seqs[user_seq] # is output
+            else # is a good closed reference call
+              otu_f.puts [user_seq,
+                          input_seqs[user_seq][:lib],
+                          db_otu_info[info[:hit]][:otu],
+                          perc_total_entropy,
+                          perc_bases_in_mask,
+                          info[:hit],
+                          info[:pid],
+                          info[:qcov]].join "\t"
+            end
+          end
+        end
+      end
+    end
+
+    AbortIf::Abi.logger.debug { "Closest DB seqs: #{closest_seqs_outf}" }
+    AbortIf::Abi.logger.debug { "Distance based OTU calls written " +
+                                "to #{distance_based_otus_outf}" }
+
+    return [closest_to_outgroups, cluster_these_user_seqs]
   end
 end
