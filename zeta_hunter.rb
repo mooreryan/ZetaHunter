@@ -103,7 +103,8 @@ OTU_CALLS_D = File.join opts[:outdir], "otu_calls"
 LOG_D       = File.join opts[:outdir], "log"
 MISC_DIR    = File.join opts[:outdir], "misc"
 BIOM_D      = File.join opts[:outdir], "biom"
-CHIMERA_D = File.join DANGEROUS_D, "chimera_details"
+CHIMERA_D   = File.join DANGEROUS_D, "chimera_details"
+CYTOSCAPE_D = File.join opts[:outdir], "cytoscape"
 
 ######################################################################
 # set up logger
@@ -255,6 +256,9 @@ CLOSEST_SEQS_F =
 # for SortMeRNA
 DB_SEQS_UNALN = File.join TMP_OUT_D, "db_seqs.unaln.fa"
 SORTMERNA_IDX = File.join TMP_OUT_D, "db_seqs.unaln.idx"
+
+NODES_F = File.join CYTOSCAPE_D, "#{BASE}.cytoscape_node_table.txt"
+EDGES_F = File.join CYTOSCAPE_D, "#{BASE}.cytoscape_network_edges.txt"
 
 
 ######################################################################
@@ -503,6 +507,18 @@ end
 # write biom file
 ######################################################################
 
+######################################################################
+# write cytoscape files
+#######################
+
+Time.time_it("Write cytoscape files", AbortIf::Abi.logger) do
+  Utils.write_cytoscape_files
+end
+
+#######################
+# write cytoscape files
+######################################################################
+
 
 ######################################################################
 # clean up
@@ -516,15 +532,24 @@ end
 # clean up
 ######################################################################
 
-AbortIf::Abi.logger.info { "FINAL FILE OUTPUTS"                           }
-AbortIf::Abi.logger.info { "Biom file:           #{BIOM_F}"            }
-AbortIf::Abi.logger.info { "Final OTUs:          #{FINAL_OTU_CALLS_F}"    }
-AbortIf::Abi.logger.info { "Denovo OTUs:         #{DENOVO_OTUS_F}"          }
-AbortIf::Abi.logger.info { "Closed ref OTUs:     #{DISTANCE_BASED_OTUS_F}"  }
-AbortIf::Abi.logger.info { "SortMeRNA output:    #{sortme_blast_f}"         }
-AbortIf::Abi.logger.info { "Closest DB seqs:     #{CLOSEST_SEQS_F}"         }
-AbortIf::Abi.logger.info { "Chimeras:            #{CHIMERIC_SEQS_F}"        }
-AbortIf::Abi.logger.info { "Probably not zetas:  #{PROBABLY_NOT_ZETAS_F}" }
-AbortIf::Abi.logger.info { "Sample to fname map: #{SAMPLE_TO_FNAME_F}"   }
-AbortIf::Abi.logger.info { "ZetaHunter log:      #{ZH_LOG_FINAL}"         }
-AbortIf::Abi.logger.info { "Mothur log:          #{MOTHUR_LOG}"           }
+AbortIf::Abi.logger.info { "FINAL FILE OUTPUTS" }
+
+AbortIf::Abi.logger.info { "Cytoscape node table: #{NODES_F}" }
+AbortIf::Abi.logger.info { "Cytoscape edge table: #{EDGES_F}" }
+
+AbortIf::Abi.logger.info { "Biom file:            #{BIOM_F}" }
+
+AbortIf::Abi.logger.info { "Final OTUs:           #{FINAL_OTU_CALLS_F}" }
+AbortIf::Abi.logger.info { "Denovo OTUs:          #{DENOVO_OTUS_F}" }
+AbortIf::Abi.logger.info { "Closed ref OTUs:      #{DISTANCE_BASED_OTUS_F}" }
+
+AbortIf::Abi.logger.info { "SortMeRNA output:     #{sortme_blast_f}" }
+AbortIf::Abi.logger.info { "Closest DB seqs:      #{CLOSEST_SEQS_F}" }
+
+AbortIf::Abi.logger.info { "Chimeras:             #{CHIMERIC_SEQS_F}" }
+AbortIf::Abi.logger.info { "Probably not zetas:   #{PROBABLY_NOT_ZETAS_F}" }
+
+AbortIf::Abi.logger.info { "Sample to fname map:  #{SAMPLE_TO_FNAME_F}" }
+
+AbortIf::Abi.logger.info { "ZetaHunter log:       #{ZH_LOG_FINAL}" }
+AbortIf::Abi.logger.info { "Mothur log:           #{MOTHUR_LOG}" }

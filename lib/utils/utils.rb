@@ -777,11 +777,63 @@ module Utils
 
     FileUtils.mkdir_p BIOM_D
     FileUtils.mkdir_p CHIMERA_D
+    FileUtils.mkdir_p CYTOSCAPE_D
     FileUtils.mkdir_p DANGEROUS_D
     FileUtils.mkdir_p LOG_D
     FileUtils.mkdir_p MISC_DIR
     FileUtils.mkdir_p OTU_CALLS_D
     FileUtils.mkdir_p OUT_D
     FileUtils.mkdir_p TMP_OUT_D
+  end
+
+  def self.write_cytoscape_files
+    sample_names = []
+    samples = []
+
+    File.open(NODES_F, "w") do |f|
+      f.puts %w[otu count].join "\t"
+
+      File.open(BIOM_F).each_line do |line|
+        if line.start_with? "#"
+          _, *sample_names = line.chomp.split "\t"
+        else
+          otu, *counts = line.chomp.split "\t"
+
+          counts = counts.map { |n| n.to_i }
+
+          f.puts [otu, counts.reduce(:+)].join "\t"
+
+          counts.each_with_index do |count, idx|
+            if count > 0
+              if samples[idx].nil?
+                samples[idx] = [otu]
+              else
+                samples[idx] << otu
+              end
+            end
+          end
+        end
+      end
+    end
+
+    AbortIf::Abi.logger.info { "Wrote #{NODES_F}" }
+
+    File.open(EDGES_F, "w") do |f|
+      f.puts %w[node1 node2 sample].join "\t"
+
+      samples.each_with_index do |otus, idx|
+        sample_name = sample_names[idx]
+
+        otus.each do |otu|
+          f.puts [otu, otu, sample_name].join "\t"
+        end
+
+        otus.combination(2).each do |otu1, otu2|
+          f.puts [otu1, otu2, sample_name].join "\t"
+        end
+      end
+    end
+
+    AbortIf::Abi.logger.info { "Wrote #{EDGES_F}" }
   end
 end
