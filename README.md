@@ -15,18 +15,22 @@ ZetaHunter also supports user-provided curated OTU databases for sequence OTU bi
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
 
+## Installing ##
+
+See `INSTALL.md`.
+
 ## Zetaproteobacteria database curation ##
 
 Please cite
 
     McAllister, S. M., R. E. Davis, J. M. McBeth, B. M. Tebo, D. Emerson, and C. L. Moyer. 2011. Biodiversity and emerging biogeography of the neutrophilic iron-oxidizing Zetaproteobacteria. Appl. Environ. Microbiol. 77:5445–5457. doi:10.1128/AEM.00533-11
 
- * version 1.0: Update database to include novel sequences since 2011 and genomes from IMG.
- * version 0.1: Identical database to McAllister et al. (2011).
-
 ## Dependencies ##
 
 ### External programs ###
+
+`ZetaHunter` uses lots of other software internally. Please cite the
+following.
 
 #### Arb SILVA ####
 
@@ -74,7 +78,8 @@ See `Gemfile`
 
 ## Assets ##
 
-`silva.gold.align.gz` is from http://www.mothur.org/wiki/Silva_reference_files
+`silva.gold.align.gz` is from
+http://www.mothur.org/wiki/Silva_reference_files
 
 **NOTE**: This file will be temporarily unzipped (requires 247mb of
   hard drive space) if chimera checking is turned on.
@@ -83,24 +88,18 @@ See `Gemfile`
 
 Lines beginning with `#` are considered comments.
 
-## Gap positions ##
+## Other info ##
+
+### Gap positions ###
 
 `base.match /[^ACTGUN]/i`
 
-## Sequence headers ##
+### Sequence headers ###
 
 The headers are split on " " characters and the first part of that is
 taken to be the sequence ID and must be unique.
 
-## TODO ##
+### Entropy ###
 
-- names/counts file for cluster step
-- try symlink instead of copying to sanitize files names
-
-- mothur errors should terminate program
-
-- check ALL infiles
-
-## Entropy ##
-
-The entropy file needs to be rebuilt each time `db_seqs.fa` is updated.
+The entropy file needs to be rebuilt each time `db_seqs.fa` is
+updated.
