@@ -13,8 +13,8 @@ foreach my $arg (@ARGV) {
     }
 }
 
-my $img = "mooreryan/zeta_hunter";
-my $zh  = "/home/ZetaHunter-0.0.3-alpha/zeta_hunter.rb";
+my $img = "mooreryan/zetahunter";
+my $zh  = "/home/ZetaHunter-0.0.6/zeta_hunter.rb";
 my $cmd = "docker run -v \"\$HOME:\$HOME\" $img ruby $zh @args";
 
 print "\n\n\nRUNNING COMMAND: $cmd\n\n\n";
