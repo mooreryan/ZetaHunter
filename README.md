@@ -15,6 +15,53 @@ ZetaHunter also supports user-provided curated OTU databases for sequence OTU bi
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
 
+## Running ZetaHunter with Docker ##
+
+If you don't have Docker, follow the instructions to install it here:
+[Mac](https://docs.docker.com/mac/),
+[Linux](https://docs.docker.com/linux/),
+[Windows](https://docs.docker.com/windows/).
+
+*Note*: If you have Windows, running `ZetaHunter` with Docker is the
+ only supported option.
+
+### Mac ###
+
+After installing Docker, opne the Launchpad and click the `Docker
+Quickstart Terminal` icon.
+
+In the terminal window that opens, enter the following command
+
+    $ docker pull mooreryan/zetahunter
+
+to download the latest `ZetaHunter` Docker image to your computer.
+
+*Note*: If you already have the `ZetaHunter` Docker image, this is
+ only necessary to ensure you have the latest version of `ZetaHunter`.
+
+Download
+[this](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter)
+perl script, and change the permissions to executable.
+
+    $ \curl "https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter" > ~/Downloads/run_zeta_hunter
+    $ chmod 755 ~/Downloads/run_zeta_hunter
+
+Move `run_zeta_hunter` to somewhere on your path.
+
+    $ sudo mv ~/Downloads/run_zeta_hunter /usr/local/bin
+
+Try it out!
+
+    $ which run_zeta_hunter
+
+should spit out
+
+    /usr/local/bin/run_zeta_hunter
+
+    $ run_zeta_hunter -h
+
+will display the help banner.
+
 ## Installing ##
 
 See `INSTALL.md`.
