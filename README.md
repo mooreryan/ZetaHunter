@@ -1,10 +1,30 @@
 # ZetaHunter #
 
-ZetaHunter is a command line script designed to assign user-supplied small subunit ribosomal RNA (SSU rRNA) gene sequences to OTUs defined by a reference sequence database.
+## Wiki ##
 
-By default, ZetaHunter uses a curated database of full-length, non-chimeric, Zetaproteobacteria SSU rRNA gene sequences derived from arb SILVA (release 123) and Zetaproteobacteria genomes from JGI's Integrated Microbial Genomes (IMG). OTU definitions are the same as those suggested by McAllister et al. (2011) at 97% identity, with novel OTUs discovered since that publication named ZetaOTU29 and higher (curated OTUs only). Infiles aligned by the arb SILVA SINA web aligner are masked using the same 1282 bp mask used in McAllister et al. (2011) to obtain reproducible OTU calls through closed reference OTU binning. User sequences that represent novel Zetaproteobacteria OTUs are de novo binned into NewZetaOTUs, numbered by abundance.
+Check the [Wiki](https://github.com/mooreryan/ZetaHunter/wiki) for
+more info!
 
-ZetaHunter also supports user-provided curated OTU databases for sequence OTU binning of any SINA-aligned SSU rRNA sequences.
+## Overview ##
+
+ZetaHunter is a command line script designed to assign user-supplied
+small subunit ribosomal RNA (SSU rRNA) gene sequences to OTUs defined
+by a reference sequence database.
+
+By default, ZetaHunter uses a curated database of full-length,
+non-chimeric, Zetaproteobacteria SSU rRNA gene sequences derived from
+arb SILVA (release 123) and Zetaproteobacteria genomes from JGI's
+Integrated Microbial Genomes (IMG). OTU definitions are the same as
+those suggested by McAllister et al. (2011) at 97% identity, with
+novel OTUs discovered since that publication named ZetaOTU29 and
+higher (curated OTUs only). Infiles aligned by the arb SILVA SINA web
+aligner are masked using the same 1282 bp mask used in McAllister et
+al. (2011) to obtain reproducible OTU calls through closed reference
+OTU binning. User sequences that represent novel Zetaproteobacteria
+OTUs are de novo binned into NewZetaOTUs, numbered by abundance.
+
+ZetaHunter also supports user-provided curated OTU databases for
+sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 
 ## Features ##
 
