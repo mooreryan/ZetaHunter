@@ -3,13 +3,27 @@
 use File::Spec;
 
 my @args = ();
+my $expand = 1;
+
 
 foreach my $arg (@ARGV) {
-    if ($arg =~ /^-/) {
+    if ($arg =~ /^-/) { # arg is a flag
         push @args, $arg;
-    } else {
+
+        # check if next arg should expand
+        if ($arg eq "-t" || $arg eq "--threads" ||
+            $arg eq "-c" || $arg eq "--cluster-method" ||
+            $arg eq "-a" || $arg eq "--base") {
+
+            $expand = 0;
+        } else {
+            $expand = 1;
+        }
+    } elsif ($expand) { # an arg that is a path, expand it
         my $path = File::Spec->rel2abs($arg);
         push @args, $path;
+    } else { # an arg that is not a path and not a flag
+        push @args, $arg;
     }
 }
 
