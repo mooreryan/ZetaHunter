@@ -23,7 +23,7 @@ al. (2011) to obtain reproducible OTU calls through closed reference
 OTU binning. User sequences that represent novel Zetaproteobacteria
 OTUs are de novo binned into NewZetaOTUs, numbered by abundance.
 
-OTU network analysis is a simply way to visualize the connectivity of
+OTU network analysis is a simple way to visualize the connectivity of
 OTUs within a sample or environment type. ZetaHunter will output edge
 and node tab-delimited files for import into cytoscape. The node file
 contains the abundance information for each node. The edge file lists
@@ -42,7 +42,7 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 4. Multi-threaded processing
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
-7. Cytoscape-compatible output file for OTU network analysis.
+7. Cytoscape-compatible output file for OTU network analysis
 
 ## Running ZetaHunter with Docker ##
 
