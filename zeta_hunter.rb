@@ -13,6 +13,8 @@ ZH_PWD_DIR = Dir.pwd
 
 gunzip = Utils.which_gunzip
 
+argv_copy = ARGV.dup
+
 require "trollop"
 
 opts = Trollop.options do
@@ -147,7 +149,10 @@ AbortIf::Abi.logger.debug do
 end
 
 AbortIf::Abi.logger.info { "Temporary log file location: #{ZH_LOG}. If " +
-              "ZetaHunter fails to complete, the log will be here." }
+                           "ZetaHunter fails to complete, the log will be here." }
+
+AbortIf::Abi.logger.debug { "ARGV: #{argv_copy.inspect}" }
+AbortIf::Abi.logger.debug { "Command line opts: #{opts.inspect}" }
 
 ###############
 # set up logger
