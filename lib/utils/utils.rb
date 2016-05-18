@@ -433,6 +433,7 @@ module Utils
 
   def self.run_sortmerna input_unaln, sortme_blast
     cmd = "#{SORTME_RNA} " +
+          "-a #{THREADS} " +
           "--ref #{DB_SEQS_UNALN},#{SORTMERNA_IDX} " +
           "--reads #{input_unaln} " +
           "--aligned #{sortme_blast} " +

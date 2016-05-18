@@ -170,3 +170,7 @@ taken to be the sequence ID and must be unique.
 
 The entropy file needs to be rebuilt each time `db_seqs.fa` is
 updated.
+
+## Versions ##
+
+- 0.0.7: Add threading to sortmerna
