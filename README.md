@@ -176,3 +176,4 @@ updated.
 - 0.0.7: Add threading to sortmerna
 - 0.0.8: Update `run_zeta_hunter` script
 - 0.0.9: Add command line args to log
+- 0.0.10: Fix bug in `run_zeta_hunter` where all args are expanded not just filenames
