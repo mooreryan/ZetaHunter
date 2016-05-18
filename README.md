@@ -23,6 +23,14 @@ al. (2011) to obtain reproducible OTU calls through closed reference
 OTU binning. User sequences that represent novel Zetaproteobacteria
 OTUs are de novo binned into NewZetaOTUs, numbered by abundance.
 
+OTU network analysis is a simply way to visualize the connectivity of
+OTUs within a sample or environment type. ZetaHunter will output edge
+and node tab-delimited files for import into cytoscape. The node file
+contains the abundance information for each node. The edge file lists
+OTUs that are found within the same sample (node1, node2, sample), thus
+allowing for visualization. Note: Samples with only one ZetaOTU will contain
+a self referential edge. Otherwise, only non-self connections are shown.
+
 ZetaHunter also supports user-provided curated OTU databases for
 sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 
@@ -30,10 +38,11 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 
 1. Stable SSU rRNA gene OTU binning to a curated database
 2. Supports import of multiple files for easy comparison of NewZetaOTUs across samples
-3. Database and mask management options
+3. Database and sequence mask management options
 4. Multi-threaded processing
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
+7. Cytoscape-compatible output file for OTU network analysis.
 
 ## Running ZetaHunter with Docker ##
 
@@ -47,7 +56,7 @@ If you don't have Docker, follow the instructions to install it here:
 
 ### Mac ###
 
-After installing Docker, opne the Launchpad and click the `Docker
+After installing Docker, open the Launchpad and click the `Docker
 Quickstart Terminal` icon.
 
 In the terminal window that opens, enter the following command
