@@ -4,7 +4,7 @@ require "abort_if"
 module AbortIf
   class Abi
     extend AbortIf
-    extend AbortIf::Assert
+    extend Assert
   end
 
   def abort_if test, msg="Fatal error"

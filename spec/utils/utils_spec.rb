@@ -37,20 +37,20 @@ describe Utils do
 
   describe "#gap?" do
     context "the character is an A C T G U or N (case insensitive)" do
-      it "returns nil" do
+      it "returns false" do
         %w[a c t g u n A C T G U N].each do |char|
-          expect(klass.gap? char).to be nil
+          expect(klass.gap? char).to be false
         end
       end
     end
 
     context "the character is anything else" do
-      it "returns MatchData" do
+      it "returns true" do
         gap_chars =
           (0..255).map { |n| n.chr } - %w[a c t g n u A C T G N U]
 
         gap_chars.each do |n|
-          expect(klass.gap? n.chr).to be_a MatchData
+          expect(klass.gap? n.chr).to be true
         end
       end
     end
