@@ -765,16 +765,12 @@ module Utils
   def self.create_needed_dirs
 
     AbortIf::Abi.abort_if File.exists?(OUT_D) && !FORCE,
-                          "Outdir '#{OUT_D}' already exists. Force " +
-                          "overwrite with --force or choose a different outdir."
+                          "Outdir '#{OUT_D}' already exists. " +
+                          "Choose a different outdir."
 
-    if File.exists?(OUT_D) && FORCE
-      AbortIf::Abi.abort_if OUT_D == "/",
-                            "I wouldn't overwrite that if I were you...."
-      AbortIf::Abi.abort_unless File.writable?(OUT_D)
-      AbortIf::Abi.logger.info { "We will overwrite #{OUT_D}" }
-      FileUtils.rm_r OUT_D
-    end
+    AbortIf::Abi.abort_unless File.writable?(OUT_D),
+                              "Outdir '#{OUT_D}' is not writable. " +
+                              "Choose a different outdir."
 
     FileUtils.mkdir_p BIOM_D
     FileUtils.mkdir_p CHIMERA_D

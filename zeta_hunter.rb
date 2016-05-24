@@ -266,21 +266,6 @@ NODES_F = File.join CYTOSCAPE_D, "#{BASE}.cytoscape_node_table.txt"
 EDGES_F = File.join CYTOSCAPE_D, "#{BASE}.cytoscape_network_edges.txt"
 
 
-######################################################################
-# FOR TEST ONLY -- remove outdir before running
-###############################################
-
-# cmd = "rm -r #{OUT_D}"
-# log_cmd AbortIf::Abi.logger, cmd
-# Process.run_it cmd
-
-# run = nil
-# run = true
-
-###############################################
-# FOR TEST ONLY -- remove outdir before running
-######################################################################
-
 # containers
 
 chimeric_ids             = {}
