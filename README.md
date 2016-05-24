@@ -180,10 +180,11 @@ taken to be the sequence ID and must be unique.
 The entropy file needs to be rebuilt each time `db_seqs.fa` is
 updated.
 
-## Versions ##
+## Versions & Bug Fixes##
 
 - 0.0.7: Add threading to sortmerna
 - 0.0.8: Update `run_zeta_hunter` script
 - 0.0.9: Add command line args to log
 - 0.0.10: Fix bug in `run_zeta_hunter` where all args are expanded not just filenames
 - 0.0.11: Remove `--force`. Docker runs as root, so best to just take it out for now.
+- 0.0.12: Fix Dockerfile.
