@@ -34,8 +34,6 @@ module Utils
   end
 
   def gap? base
-    # base.match /[^ACTGUN]/i
-
     !NON_GAPS.include?(base)
   end
 
@@ -764,23 +762,21 @@ module Utils
 
   def self.create_needed_dirs
 
-    AbortIf::Abi.abort_if File.exists?(OUT_D) && !FORCE,
+    AbortIf::Abi.abort_if File.exists?(OUT_D),
                           "Outdir '#{OUT_D}' already exists. " +
                           "Choose a different outdir."
 
-    AbortIf::Abi.abort_unless File.writable?(OUT_D),
-                              "Outdir '#{OUT_D}' is not writable. " +
-                              "Choose a different outdir."
+    Dir.try_mkdir OUT_D
 
-    FileUtils.mkdir_p BIOM_D
-    FileUtils.mkdir_p CHIMERA_D
-    FileUtils.mkdir_p CYTOSCAPE_D
-    FileUtils.mkdir_p DANGEROUS_D
-    FileUtils.mkdir_p LOG_D
-    FileUtils.mkdir_p MISC_DIR
-    FileUtils.mkdir_p OTU_CALLS_D
-    FileUtils.mkdir_p OUT_D
-    FileUtils.mkdir_p TMP_OUT_D
+    Dir.try_mkdir BIOM_D
+    Dir.try_mkdir CYTOSCAPE_D
+    Dir.try_mkdir DANGEROUS_D
+    Dir.try_mkdir LOG_D
+    Dir.try_mkdir MISC_DIR
+    Dir.try_mkdir OTU_CALLS_D
+    Dir.try_mkdir TMP_OUT_D
+
+    Dir.try_mkdir CHIMERA_D
   end
 
   def self.write_cytoscape_files

@@ -188,3 +188,4 @@ updated.
 - 0.0.10: Fix bug in `run_zeta_hunter` where all args are expanded not just filenames
 - 0.0.11: Remove `--force`. Docker runs as root, so best to just take it out for now.
 - 0.0.12: Fix Dockerfile.
+- 0.0.13: Fix outdir not writable bug.

@@ -7,6 +7,7 @@ Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
 File.extend CoreExtensions::File
 Hash.include CoreExtensions::Hash
+Dir.extend CoreExtensions::Dir
 
 THIS_D = File.dirname(__FILE__)
 ZH_PWD_DIR = Dir.pwd
@@ -75,8 +76,6 @@ opts = Trollop.options do
   opt(:check_chimeras, "Flag to check chimeras", short: "-k",
       default: true)
 
-  opt(:force, "Force overwriting of out directory")
-
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 
   opt(:debug, "Debug mode, don't delete tmp files")
@@ -88,8 +87,6 @@ INDEXDB_RNA    = opts[:indexdb_rna]
 SORTME_RNA     = opts[:sortmerna]
 CLUSTER_METHOD = opts[:cluster_method]
 BASE           = opts[:base]
-FORCE          = opts[:force]
-
 
 if opts[:inaln].nil?
   Trollop.die :inaln, "Specify an input alignment"
