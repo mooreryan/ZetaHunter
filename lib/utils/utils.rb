@@ -817,7 +817,8 @@ module Utils
       samples.each_with_index do |otus, idx|
         sample_name = sample_names[idx]
 
-        otus.each do |otu|
+        if otus.count == 1
+          otu = otus[0]
           f.puts [otu, otu, sample_name].join "\t"
         end
 

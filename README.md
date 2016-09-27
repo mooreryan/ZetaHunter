@@ -180,7 +180,7 @@ taken to be the sequence ID and must be unique.
 The entropy file needs to be rebuilt each time `db_seqs.fa` is
 updated.
 
-## Versions & Bug Fixes##
+## Versions & Bug Fixes ##
 
 - 0.0.7: Add threading to sortmerna
 - 0.0.8: Update `run_zeta_hunter` script
@@ -189,3 +189,4 @@ updated.
 - 0.0.11: Remove `--force`. Docker runs as root, so best to just take it out for now.
 - 0.0.12: Fix Dockerfile.
 - 0.0.13: Fix outdir not writable bug.
+- 0.0.14: Remove self connections from Cytoscape unless the sample has only one OTU
