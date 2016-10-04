@@ -797,6 +797,9 @@ module Utils
           f.puts [otu, counts.reduce(:+)].join "\t"
 
           counts.each_with_index do |count, idx|
+            # if a sample has zero count for all OTU, it will have nil
+            # for that index in the counts ary. (See below) This can
+            # happen if every seq in the sample is not a zeta
             if count > 0
               if samples[idx].nil?
                 samples[idx] = [otu]
@@ -815,15 +818,19 @@ module Utils
       f.puts %w[node1 node2 sample].join "\t"
 
       samples.each_with_index do |otus, idx|
-        sample_name = sample_names[idx]
+        # if a sample has 0 count for all OTUs the otus ary will be
+        # nil
+        unless otus.nil?
+          sample_name = sample_names[idx]
 
-        if otus.count == 1
-          otu = otus[0]
-          f.puts [otu, otu, sample_name].join "\t"
-        end
+          if otus.count == 1
+            otu = otus[0]
+            f.puts [otu, otu, sample_name].join "\t"
+          end
 
-        otus.combination(2).each do |otu1, otu2|
-          f.puts [otu1, otu2, sample_name].join "\t"
+          otus.combination(2).each do |otu1, otu2|
+            f.puts [otu1, otu2, sample_name].join "\t"
+          end
         end
       end
     end
