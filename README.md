@@ -190,3 +190,4 @@ updated.
 - 0.0.12: Fix Dockerfile.
 - 0.0.13: Fix outdir not writable bug.
 - 0.0.14: Remove self connections from Cytoscape unless the sample has only one OTU
+- 0.0.15: If a sample has no OTUs (this could happen if all sequences were flagged as not being Zetas and removed) there would be an error in writing the OTU network edges file because the biom file would have a column of zeros for that sample. The biom file remains unchanged but ZH now doesn't try and write any records for samples with an entire column of zeros in the biom file.
