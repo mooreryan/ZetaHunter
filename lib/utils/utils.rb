@@ -104,13 +104,23 @@ module Utils
     counts
   end
 
+  # TODO this should take mask lenght and check against that?
   def get_seq_entropy seq, entropy
     AbortIf::Abi.assert seq
     AbortIf::Abi.assert entropy
-    AbortIf::Abi.assert seq.length == entropy.length,
-           "Seq length was %d should be %d",
-           seq.length,
-           entropy.length
+    # AbortIf::Abi.assert seq.length == entropy.length,
+    #        "Seq length was %d should be %d",
+    #        seq.length,
+    #        entropy.length
+
+    # TODO consider checking length
+    # unless seq.length == entropy.length
+    #   AbortIf::Abi.logger.warn { sprintf "Seq length was %d. " +
+    #                                      "If this is the Zeta mask, " +
+    #                                      "it should be %d",
+    #                                      seq.length,
+    #                                      entropy.length }
+    # end
 
     bases_in_mask = 0
     per_posn_entropy = seq.each_char.map.with_index do |base, idx|
@@ -514,14 +524,21 @@ module Utils
             masked_input_seq_entropy[user_seq][:perc_bases_in_mask]
 
           # TODO assert db_otu_info.keys contains info[:hit]
-          close_f.puts [user_seq,
-                        input_seqs[user_seq][:lib],
-                        db_otu_info[info[:hit]][:otu],
-                        perc_total_entropy,
-                        perc_bases_in_mask,
-                        info[:hit],
-                        info[:pid],
-                        info[:qcov]].join "\t"
+          begin
+            close_f.puts [user_seq,
+                          input_seqs[user_seq][:lib],
+                          db_otu_info[info[:hit]][:otu],
+                          perc_total_entropy,
+                          perc_bases_in_mask,
+                          info[:hit],
+                          info[:pid],
+                          info[:qcov]].join "\t"
+          rescue NoMethodError => e
+            p "ERROR!!!"
+            p e.backtrace
+            p [user_seq, info.keys, input_seqs.keys, db_otu_info.keys, info[:hit]]
+            abort
+          end
 
           if outgroup_names.include? info[:hit] # is nearest an outgroup
             closest_to_outgroups << user_seq # is output
@@ -600,16 +617,20 @@ module Utils
     check_for_error MOTHUR_LOG
   end
 
-  def self.find_otu_file otu_file_base
+  def self.find_otu_file otu_file_base, otu_dist
     otu_file = ""
-    %w[03 02 01].each do |pid|
+    # %w[03 02 01].each do |pid|
+    #   otu_file = "#{otu_file_base}.#{pid}.otu"
+    (0..otu_dist).map do |n|
+      n >= 10 ? n.to_s : "0#{n}"
+    end.reverse.each do |pid|
       otu_file = "#{otu_file_base}.#{pid}.otu"
       break if File.exists? otu_file
-      AbortIf::Abi.logger.debug { "OTU file #{otu_file} not found" }
+      AbortIf::Abi.logger.debug { "OTU file #{otu_file} not found, checking the next one." }
     end
 
     AbortIf::Abi.abort_unless_file_exists otu_file
-    AbortIf::Abi.logger.debug { "For OTUs, using #{otu_file}" }
+    AbortIf::Abi.logger.info { "For OTUs, using #{otu_file}" }
 
     otu_file
   end

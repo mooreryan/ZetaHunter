@@ -73,6 +73,10 @@ opts = Trollop.options do
       type: :string,
       default: "average")
 
+  opt(:otu_percent, "OTU similarity percentage",
+      type: :int,
+      default: 97)
+
   opt(:check_chimeras, "Flag to check chimeras", short: "-k",
       default: true)
 
@@ -87,6 +91,12 @@ INDEXDB_RNA    = opts[:indexdb_rna]
 SORTME_RNA     = opts[:sortmerna]
 CLUSTER_METHOD = opts[:cluster_method]
 BASE           = opts[:base]
+
+if opts[:otu_percent] < 0 || opts[:otu_percent] > 99
+  Trollop.die :otu_percent, "OTU similarity must be from 0 to 99"
+end
+
+OTU_DIST = 100 - opts[:otu_percent]
 
 if opts[:inaln].nil?
   Trollop.die :inaln, "Specify an input alignment"
@@ -396,7 +406,7 @@ end
 
 
 Time.time_it("Unalign DB seqs if needed", AbortIf::Abi.logger) do
-  Utils.unalign_seqs_from_file DB_SEQS, DB_SEQS_UNALN
+  Utils.unalign_seqs_from_file opts[:db_seqs], DB_SEQS_UNALN
 end
 
 Time.time_it("Unalign input seqs", AbortIf::Abi.logger) do
@@ -462,7 +472,7 @@ end
 ############################
 
 Time.time_it("Find OTU file", AbortIf::Abi.logger) do
-  otu_file = Utils.find_otu_file OTU_F_BASENAME
+  otu_file = Utils.find_otu_file OTU_F_BASENAME, OTU_DIST
 end
 
 Time.time_it("Assign de novo OTUs", AbortIf::Abi.logger) do
