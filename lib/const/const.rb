@@ -55,8 +55,8 @@ module Const
   SILVA_GOLD_ALN_GZ = File.join ASSETS_DIR, "silva.gold.align.gz"
   SILVA_FREQ        = File.join ASSETS_DIR, "silva.bacteria.freq"
   SILVA_QUAN        = File.join ASSETS_DIR, "silva.bacteria.pintail.quan"
-  DB_OTU_INFO       = File.join ASSETS_DIR, "db_otu_info.txt"
-  DB_SEQS           = File.join ASSETS_DIR, "db_seqs.fa.gz"
+  # DB_OTU_INFO       = File.join ASSETS_DIR, "db_otu_info.txt"
+  # DB_SEQS           = File.join ASSETS_DIR, "db_seqs.fa.gz"
   MASK              = File.join ASSETS_DIR, "mask.fa.gz"
   OUTGROUPS         = File.join ASSETS_DIR, "outgroup_names.txt"
 

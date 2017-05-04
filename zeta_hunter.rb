@@ -3,6 +3,7 @@ require_relative File.join "lib", "lib_helper.rb"
 include Const
 include Utils
 
+# zh = Class.new.extend ZetaHunter
 Process.extend CoreExtensions::Process
 Time.extend CoreExtensions::Time
 File.extend CoreExtensions::File
@@ -46,7 +47,8 @@ opts = Trollop.options do
   opt(:db_otu_info,
       "Database OTU info file name",
       type: :string,
-      default: DB_OTU_INFO)
+      # default: DB_OTU_INFO)
+      default: File.join(ASSETS_DIR, "db_otu_info.txt"))
 
   opt(:mask, "Fasta file with the mask",
       type: :string,
@@ -54,7 +56,8 @@ opts = Trollop.options do
 
   opt(:db_seqs, "Fasta file with aligned DB seqs",
       type: :string,
-      default: DB_SEQS)
+      # default: DB_SEQS)
+      default: File.join(ASSETS_DIR, "db_seqs.fa.gz"))
 
   opt(:mothur, "The mothur executable",
       type: :string,
@@ -82,6 +85,11 @@ opts = Trollop.options do
 
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 
+  opt(:auto_dists,
+      "Calculate auto dists for groups in DB seqs",
+      type: :string,
+      default: nil)
+
   opt(:debug, "Debug mode, don't delete tmp files")
 end
 
@@ -91,6 +99,15 @@ INDEXDB_RNA    = opts[:indexdb_rna]
 SORTME_RNA     = opts[:sortmerna]
 CLUSTER_METHOD = opts[:cluster_method]
 BASE           = opts[:base]
+
+auto_dists = nil
+if opts[:auto_dists]
+  unless opts[:auto_dists] == "mean" || opts[:auto_dists] == "min"
+    Trollop.die :auto_dists, "must be one of mean or min"
+  end
+
+  auto_dists = opts[:auto_dists].to_sym
+end
 
 if opts[:otu_percent] < 0 || opts[:otu_percent] > 99
   Trollop.die :otu_percent, "OTU similarity must be from 0 to 99"
@@ -427,6 +444,51 @@ Time.time_it("Read SortMeRNA blast", AbortIf::Abi.logger) do
   closed_ref_otus = Utils.read_sortme_blast sortme_blast_f
 end
 
+
+######################################################################
+# Calculate auto dists if necessary
+###################################
+
+otu2seqs = nil
+seq2otu = nil
+db_all_v_all_dists_f = nil
+db_all_v_all_dists = nil
+auto_otu_similarities = nil
+auto_sim_type = nil
+
+require "zeta_hunter"
+zh = Class.new.extend ZetaHunter
+
+if opts[:auto_dists]
+  Time.time_it("Calculate in group auto distances", AbortIf::Abi.logger) do
+    otu2seqs, seq2otu = zh.otus_from_otu_info_file opts[:db_otu_info]
+
+    unzip_db_seqs = File.join TMP_OUT_D, "unzipped_db_seqs.fa"
+    db_all_v_all_dists_f = File.join TMP_OUT_D, "unzipped_db_seqs.phylip.dist"
+
+    cmd = "gunzip -c #{opts[:db_seqs]} > #{unzip_db_seqs}"
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+
+
+    Utils.run_mothur_distance unzip_db_seqs
+    db_all_v_all_dists = zh.parse_dist_file db_all_v_all_dists_f
+
+    AbortIf::Abi.logger.info { "Using default OTU similarity cutoff of #{opts[:otu_percent]}% for the following singleton OTUs: #{otu2seqs.select { |otu, seqs| seqs.count == 1 }.keys.join(', ')}" }
+
+    auto_otu_similarities = zh.calc_auto_otu_sim otu2seqs, db_all_v_all_dists, opts[:otu_percent]
+    auto_sim_type = auto_dists
+
+    cmd = "rm #{unzip_db_seqs}"
+    log_cmd AbortIf::Abi.logger, cmd
+    Process.run_it! cmd
+  end
+end
+
+###################################
+# Calculate auto dists if necessary
+######################################################################
+
 Time.time_it("Write closest ref seqs and OTU calls", AbortIf::Abi.logger) do
   closest_to_outgroups, cluster_these_user_seqs =
                         Utils.write_closest_ref_seqs_and_otu_calls(CLOSEST_SEQS_F,
@@ -434,7 +496,11 @@ Time.time_it("Write closest ref seqs and OTU calls", AbortIf::Abi.logger) do
                                                                    masked_input_seq_entropy,
                                                                    input_seqs,
                                                                    db_otu_info,
-                                                                   outgroup_names)
+                                                                   outgroup_names,
+                                                                   opts[:otu_percent],
+                                                                   auto_otu_similarities,
+                                                                   auto_sim_type,
+                                                                   seq2otu)
 end
 
 #####################################################
@@ -521,8 +587,10 @@ end
 # clean up
 ##########
 
-Time.time_it("Clean up", AbortIf::Abi.logger) do
-  Utils.clean_up sortme_blast_f
+unless opts[:debug]
+  Time.time_it("Clean up", AbortIf::Abi.logger) do
+    Utils.clean_up sortme_blast_f
+  end
 end
 
 ##########

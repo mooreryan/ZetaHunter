@@ -1,5 +1,6 @@
 this_dir = File.dirname(__FILE__)
 
+# require_relative File.join "zeta_hunter", "zeta_hunter.rb"
 require_relative File.join "abort_if", "abort_if.rb"
 require_relative File.join "assert", "assert.rb"
 require_relative File.join "const", "const.rb"

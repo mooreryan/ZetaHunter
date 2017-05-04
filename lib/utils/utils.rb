@@ -1,7 +1,10 @@
 require_relative "../abort_if/abort_if"
 require "set"
+require "zeta_hunter"
 
 module Utils
+  ZH = Class.new.extend ZetaHunter
+
   @@usr_otu_num = 1
   NON_GAPS = Set.new %w[A a C c T t G g U u N n]
 
@@ -458,6 +461,7 @@ module Utils
     sortme_blast
   end
 
+  # get the best hits from the sortme blast
   def self.read_sortme_blast sortme_blast
     closed_ref_otus = {}
 
@@ -489,10 +493,17 @@ module Utils
                                                 masked_input_seq_entropy,
                                                 input_seqs,
                                                 db_otu_info,
-                                                outgroup_names
+                                                outgroup_names,
+                                                otu_similarity=97.0,
+                                                auto_otu_similarities=nil,
+                                                auto_sim_type=:mean,
+                                                seq2otu=nil
+
 
     closest_to_outgroups = []
     cluster_these_user_seqs = {}
+
+    # p [:db_out_info, db_otu_info]
 
     File.open(closest_seqs_outf, "w") do |close_f|
       File.open(DISTANCE_BASED_OTUS_F, "w") do |otu_f|
@@ -543,7 +554,18 @@ module Utils
           if outgroup_names.include? info[:hit] # is nearest an outgroup
             closest_to_outgroups << user_seq # is output
           else # is nearest a zeta OTU
-            if info[:pid] < 97.0 # will be clustered later
+            if auto_otu_similarities && seq2otu
+              otu_sim_cutoff = ZH.find_otu_sim auto_otu_similarities,
+                                               auto_sim_type,
+                                               seq2otu.map { |k, v| [ZH.clean_str(k), v] }.to_h,
+                                               info[:hit]
+            else
+              otu_sim_cutoff = otu_similarity
+            end
+
+            AbortIf::Abi.logger.debug { "using otu_sim_cutoff: #{otu_sim_cutoff} for #{user_seq} which is closest to #{info[:hit]}" }
+
+            if info[:pid] < otu_sim_cutoff # will be clustered later
               AbortIf::Abi.assert input_seqs.has_key? user_seq
               cluster_these_user_seqs[user_seq] = input_seqs[user_seq] # is output
             else # is a good closed reference call
