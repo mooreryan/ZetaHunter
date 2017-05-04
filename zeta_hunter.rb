@@ -86,7 +86,7 @@ opts = Trollop.options do
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 
   opt(:auto_dists,
-      "Calculate auto dists for groups in DB seqs",
+      "Calculate auto dists for groups in DB seqs (mean or min)",
       type: :string,
       default: nil)
 
@@ -165,7 +165,7 @@ logger.outputters << file_outputter
 AbortIf::Abi.set_logger logger
 
 AbortIf::Abi.logger.debug do
-  "Version: #{ZetaHunter::VERSION}, " +
+  "Version: #{ZetaHunter::PROGRAM_VERSION}, " +
     "Copyright: #{COPYRIGHT}, " +
     "Contact: #{CONTACT}, " +
     "Website: #{WEBSITE}, " +

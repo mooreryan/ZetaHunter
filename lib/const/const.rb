@@ -13,7 +13,7 @@ module Const
   WEBSITE   = "https://github.com/mooreryan/ZetaHunter"
   LICENSE   = "GPLv3"
 
-  VERSION_BANNER = "  # Version: #{Object::ZetaHunter::VERSION}
+  VERSION_BANNER = "  # Version: #{Object::ZetaHunter::PROGRAM_VERSION}
   # Copyright #{COPYRIGHT}
   # Contact: #{CONTACT}
   # Website: #{WEBSITE}

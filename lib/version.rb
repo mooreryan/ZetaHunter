@@ -1,3 +1,3 @@
 module ZetaHunter
-  VERSION = "0.0.17-alpha"
+  PROGRAM_VERSION = "0.0.17-alpha"
 end
