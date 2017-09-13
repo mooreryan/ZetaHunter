@@ -1,0 +1,51 @@
+The following sequences are in the ZH v.3.0 database, but upon
+phylogenetic analysis create unusually long branches.
+
+LC086661
+LC086659
+LC086680
+LC086678
+LC086673
+LC086670
+LC086666
+LC086664
+LC086662
+LC086657
+
+mmmmmmmNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNmmmmmmZetaHunter
+mmmmmmmmmmmmmmmmmmmNNNNNNNNmhs+:://+ossyhmNNNNNNNNmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmdy+-.........``` `-+shdmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmso/-.``.-..``            `:dmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmms....``..`.-..````````      `smmmmmmmmmmmmmmmmmmmdm
+mmmmmmmmmmmmmmmmmmh.```` ``.:-:--::/+osyso/:.`  `+dmmmmmmmmmmmmmmmmddm
+mmmmmmmmmmmmmmmmmm/.-:+++oshddmddddddddddhyso+-.``-smmmmmmmmmmmmmmmddd
+mmmmmmmmmmmmmmmmmo:/shddmmmmNNNNNNmmmdddhhysso+:-...ommmmmmmmmmddddddd
+mmmmmmmmmmmmmmmmo-:yhdddmmmmmmmmmmmmdddhhyysooo+/-```ymmmmmmmmmddddddd
+mmmmmmmmmmmmmmmd.:ohddddmmmmmmmmmmdddddhhhyssso+/:.``-dmmmmmmmdddddddd
+mmmmmmmmmmmmmmmo.:shhddddmmmmmmmmmmmdddddhyysso+//.```ommdmddddddddddd
+mmmmmmmmmmmmmmd-.-ohhhdddmmmmNmmmmmmmddhhhyyyso/::.`  -ddddddddddddddd
+mmmmmmmmmmmmmmh```+hhyos+//+syydddhhys+::-://:::/:.`  `hdddddddddddddd
+mmmmmmmmmmmmmmy` `+ho/+ss+::::/oyhso/:-:://:::---:-`   odddddddddddddd
+mmmmmmmmmmmmmmh``./+:s+:--..--:-ohs:-:--..`..--/-..``  :dddddddddddddd
+mmmmmmmmmmmmmmm/..yoyhyssssssso:hmh/-/ooso+/://o//:.```/hhhddddddddddd
+mmmmmmmmmmmmmmmh/-shydhhhyyyssohddhsooossssssssss+:-`-:/syyhdddddddddd
+mmmmmmmmmmmmmmmmh/sshyssyyysoohhdmhsoyoosssoo++++/:--//oossyhhdddddddd
+mmmmmmmmmmmmmmmmmysyhhhdhhs+ossosso//o/++oyyyso/:::-::/oooossyhhdddddd
+mmmmmmmmmmmmmmmmmdsyssss+//ohh/::::::::/o+//++//:::-::ooooooosyhhddddd
+mmmmmmmmmmmmmmmmmdsso++//:/hhhhhyo++////++:::/:::::-.-oooooooosyhhdddd
+mdmmmmmmmmmmmmmmmmyossyys+//--/+++////:...:+s+///:--`:ooooooooosyyhhdd
+mddddmmmmmmmmmmmmmdsosyhhhdhs+oosyso/:---:odho//:--.+ooooooooooosyyhhd
+ddddddmmmmdmmmmmmmdhoosyhdddhyysyyyso+///+yyo/:::..-ooooooooooooosyyhh
+ddddddddddddmmmmmmmdy++oyhdddhhys+++++++ssso/::-.../oooooooooooooosyyh
+dddddddddddddddddyo/-:::+syhddddddddhhhhyo/:::...-. `:+oooooooooooosyy
+dddddddddddddhs/:--:--+:--:+shhhhhhhhyso/:---...-:.  ``.-/+ooooooooosy
+ddddddddhyo+:::::-----/+:--.--::::::::--......-::-.` ``````.:/ooooooos
+ddddhs+::::----:------/o+/:--...............-::::-`````````````-:/+ooo
+hs+/::::::------------:so+//:---........--::///::.` ``````````````.-:/
+::::::::--------------.:oo+//::::/:::::::://///:-`  `````````````.....
+:::::--:--------------...:////::://///::://///:.   `````````````......
+-----------------------..``.-:::::::::::///:-.`   ```````````````.....
+--------------:--------...`````.----::::-.``    `````````````````.....
+-------------------------..````                ````````````````````...
+
+"WARNING: Use at your own risk." --Sean M. McAllister
