@@ -481,7 +481,8 @@ Time.time_it("Assign de novo OTUs", AbortIf::Abi.logger) do
                            input_ids,
                            input_seqs,
                            closest_to_outgroups,
-                           masked_input_seq_entropy
+                           masked_input_seq_entropy,
+                           closed_ref_otus
 end
 
 Time.time_it("Write final OTU calls", AbortIf::Abi.logger) do

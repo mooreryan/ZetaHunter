@@ -640,7 +640,8 @@ module Utils
                               input_ids,
                               input_seqs,
                               closest_to_outgroups,
-                              masked_input_seq_entropy
+                              masked_input_seq_entropy,
+                              closed_ref_otus
 
     File.open(PROBABLY_NOT_ZETAS_F, "w") do |nzf|
       nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
