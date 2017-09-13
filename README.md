@@ -46,10 +46,7 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 
 ## Running ZetaHunter with Docker ##
 
-If you don't have Docker, follow the instructions to install it here:
-[Mac](https://docs.docker.com/mac/),
-[Linux](https://docs.docker.com/linux/),
-[Windows](https://docs.docker.com/windows/).
+If you don't have Docker, check out the install instructions [here](https://docs.docker.com/).
 
 *Note*: If you have Windows, running `ZetaHunter` with Docker is the
  only supported option.
