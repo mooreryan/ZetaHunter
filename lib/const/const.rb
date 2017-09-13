@@ -1,3 +1,21 @@
+# Copyright 2016 - 2017 Ryan Moore
+# Contact: moorer@udel.edu
+#
+# This file is part of ZetaHunter.
+#
+# ZetaHunter is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# ZetaHunter is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with ZetaHunter.  If not, see <http://www.gnu.org/licenses/>.
+
 require "abort_if"
 require "os"
 require_relative "../version"
@@ -8,16 +26,16 @@ module Const
   # program info
   ##############
 
-  COPYRIGHT = "2016 Ryan Moore"
+  COPYRIGHT = "2016 - 2017 Ryan Moore"
   CONTACT   = "moorer@udel.edu"
   WEBSITE   = "https://github.com/mooreryan/ZetaHunter"
   LICENSE   = "GPLv3"
 
-  VERSION_BANNER = "  # Version: #{Object::ZetaHunter::VERSION}
-  # Copyright #{COPYRIGHT}
-  # Contact: #{CONTACT}
-  # Website: #{WEBSITE}
-  # License: #{LICENSE}"
+  VERSION_BANNER = "  # Version:   #{Object::ZetaHunter::VERSION}
+  # Copyright: #{COPYRIGHT}
+  # Contact:   #{CONTACT}
+  # Website:   #{WEBSITE}
+  # License:   #{LICENSE}"
 
   ##############
   # program info
