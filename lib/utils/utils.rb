@@ -765,13 +765,27 @@ module Utils
     end
   end
 
-  def self.clean_up sortme_blast
-    FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
+  def self.clean_up sortme_blast, debug
+    unless debug # only delete if no debug flag is passed
+      FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
 
-    FileUtils.rm Dir.glob File.join OUT_D, "mothur.*.logfile"
-    FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
+      FileUtils.rm Dir.glob File.join OUT_D, "mothur.*.logfile"
+      FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
 
-    FileUtils.rm_r TMP_OUT_D
+
+      # For sleep command, see
+      # https://github.com/mooreryan/ZetaHunter/issues/37
+      sleep 2
+      begin
+        FileUtils.rm_r TMP_OUT_D, secure: true
+      rescue Errno::ENOTEMPTY => e
+        AbortIf::Abi.logger.warning do
+          "Got Errno::ENOTEMPTY when trying to delete " +
+            "#{TMP_OUT_D}. Not deleting it. Error: " +
+            "#{e.inspect}"
+        end
+      end
+    end
 
     FileUtils.mv Dir.glob(CHIMERA_DETAILS), CHIMERA_D
 

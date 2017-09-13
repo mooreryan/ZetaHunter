@@ -523,7 +523,7 @@ end
 ##########
 
 Time.time_it("Clean up", AbortIf::Abi.logger) do
-  Utils.clean_up sortme_blast_f
+  Utils.clean_up sortme_blast_f, opts[:debug]
 end
 
 ##########
@@ -551,3 +551,5 @@ AbortIf::Abi.logger.info { "Sample to fname map:  #{SAMPLE_TO_FNAME_F}" }
 
 AbortIf::Abi.logger.info { "ZetaHunter log:       #{ZH_LOG_FINAL}" }
 AbortIf::Abi.logger.info { "Mothur log:           #{MOTHUR_LOG}" }
+
+STDERR.puts Const::LOGO
