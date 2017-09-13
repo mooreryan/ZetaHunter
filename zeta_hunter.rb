@@ -147,6 +147,21 @@ logger.outputters << file_outputter
 
 AbortIf::Abi.set_logger logger
 
+# Check for correct version of parse fasta
+begin
+  FastaFile
+rescue NameError => e
+  AbortIf::Abi.logger.fatal do
+    "Uninitialized constant: FastaFile. ZetaHunter requires " +
+      "parse_fasta library version >= 1.8, but <= 1.9.1. " +
+      "Do you have version 2 installed? Run this command " +
+      "(without the quotes) to find out: " +
+      "'gem list | grep parse_fasta'."
+  end
+
+  abort
+end
+
 AbortIf::Abi.logger.debug do
   "Version: #{ZetaHunter::VERSION}, " +
     "Copyright: #{COPYRIGHT}, " +
