@@ -164,6 +164,23 @@ http://www.mothur.org/wiki/Silva_reference_files
 
 Lines beginning with `#` are considered comments.
 
+## ZH outputs
+
+### dangerous_seqs
+
+This folder contains chimeras and seqs that ZH has flagged as not
+likely to be Zetaproteobacteria a Zeta sequence.
+
+Seqs that are greater than or equal to 97% identity to an outgroup in
+the gold databse in the closed reference OTU calling step are placed
+in the `probably_not_zetas` file. Also, a sequence that makes it to
+the de novo OTU calling step, but is in an OTU of size 1 and that was
+closest to an outgroup in the closed reference OTU calling step (but
+less than 97% identity to its outgroup hit) will be in the
+`probably_not_zetas` file. Finally, sequences flagged as chimeras will
+be in the `probably_not_zetas` file as well as the likely chimera
+file.
+
 ## Other info ##
 
 ### Gap positions ###
@@ -179,15 +196,3 @@ taken to be the sequence ID and must be unique.
 
 The entropy file needs to be rebuilt each time `db_seqs.fa` is
 updated.
-
-## Versions & Bug Fixes ##
-
-- 0.0.7: Add threading to sortmerna
-- 0.0.8: Update `run_zeta_hunter` script
-- 0.0.9: Add command line args to log
-- 0.0.10: Fix bug in `run_zeta_hunter` where all args are expanded not just filenames
-- 0.0.11: Remove `--force`. Docker runs as root, so best to just take it out for now.
-- 0.0.12: Fix Dockerfile.
-- 0.0.13: Fix outdir not writable bug.
-- 0.0.14: Remove self connections from Cytoscape unless the sample has only one OTU
-- 0.0.15: If a sample has no OTUs (this could happen if all sequences were flagged as not being Zetas and removed) there would be an error in writing the OTU network edges file because the biom file would have a column of zeros for that sample. The biom file remains unchanged but ZH now doesn't try and write any records for samples with an entire column of zeros in the biom file.

@@ -404,8 +404,6 @@ module Utils
       File.open(uchime_ids, "rt").each_line do |line|
         id = line.chomp
         chimeric_ids.store_in_array id, "uchime"
-
-        AbortIf::Abi.logger.debug { "Uchime flagged #{id}" }
       end
     end
   end
@@ -488,7 +486,7 @@ module Utils
       if qcov >= MIN_QCOV
         insert_new_entry =
           (closed_ref_otus.has_key?(user_seq) &&
-           closed_ref_otus[user_seq][:pid] < pid) ||
+           closed_ref_otus[user_seq][:pid] < pid) || # current hit is a better hit
           !closed_ref_otus.has_key?(user_seq)
 
         if insert_new_entry
@@ -511,6 +509,9 @@ module Utils
 
     closest_to_outgroups = []
     cluster_these_user_seqs = {}
+
+    nzf = File.open(PROBABLY_NOT_ZETAS_F, "w")
+    nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
 
     File.open(closest_seqs_outf, "w") do |close_f|
       File.open(DISTANCE_BASED_OTUS_F, "w") do |otu_f|
@@ -560,11 +561,18 @@ module Utils
 
           if outgroup_names.include? info[:hit] # is nearest an outgroup
             closest_to_outgroups << user_seq # is output
-          else # is nearest a zeta OTU
-            if info[:pid] < 97.0 # will be clustered later
-              AbortIf::Abi.assert input_seqs.has_key? user_seq
-              cluster_these_user_seqs[user_seq] = input_seqs[user_seq] # is output
-            else # is a good closed reference call
+          end
+
+          if info[:pid] < 97.0 # will be clustered later
+            AbortIf::Abi.assert input_seqs.has_key? user_seq
+            cluster_these_user_seqs[user_seq] = input_seqs[user_seq] # is output
+          else # is a good closed reference call
+            if outgroup_names.include? info[:hit] # >= 97 but closest to outgroup
+              nzf.puts [user_seq,
+                        input_seqs[user_seq][:lib],
+                        info[:hit],
+                        info[:pid]].join "\t"
+            else # >= 97 % but NOT closest to an outgroup
               otu_f.puts [user_seq,
                           input_seqs[user_seq][:lib],
                           db_otu_info[info[:hit]][:otu],
@@ -582,6 +590,8 @@ module Utils
     AbortIf::Abi.logger.debug { "Closest DB seqs: #{closest_seqs_outf}" }
     AbortIf::Abi.logger.debug { "Distance based OTU calls written " +
                                 "to #{DISTANCE_BASED_OTUS_F}" }
+
+    nzf.close
 
     return [closest_to_outgroups, cluster_these_user_seqs]
   end
@@ -661,12 +671,16 @@ module Utils
                               masked_input_seq_entropy,
                               closed_ref_otus
 
-    File.open(PROBABLY_NOT_ZETAS_F, "w") do |nzf|
-      nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
+    seqs_in_denovo_otus_file = []
+
+    File.open(PROBABLY_NOT_ZETAS_F, "a") do |nzf|
 
       File.open(DENOVO_OTUS_F, "w") do |f|
         f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
+        # This file contains seqs from the clusters_these_user_seqs
+        # array only. Not closest_to_outgroups (from the
+        # write_closest_ref_seqs_and_otu_calls metdod).
         File.open(otu_file, "rt").each_line do |line|
           otu, id_str = line.chomp.split "\t"
           ids = id_str.split ","
@@ -695,10 +709,10 @@ module Utils
                         closed_ref_otus[id][:hit],
                         closed_ref_otus[id][:pid]].join "\t"
 
-              AbortIf::Abi.logger.info { "Seq: #{id} is probably not a Zeta" }
             else
               AbortIf::Abi.assert_keys masked_input_seq_entropy, id
               perc_entropy = masked_input_seq_entropy[id]
+              seqs_in_denovo_otus_file << id
               f.puts [id,
                       sample,
                       otu_call,
