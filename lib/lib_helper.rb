@@ -33,3 +33,5 @@ require "log4r"
 require "set"
 require "parse_fasta"
 require "abort_if"
+
+require "tmpdir"

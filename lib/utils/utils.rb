@@ -381,7 +381,7 @@ module Utils
     infiles.each do |fname|
       params = "fasta=#{fname}, " +
                "reference=#{SILVA_GOLD_ALN}, " +
-               "outputdir=#{OUT_D}, " +
+               "outputdir=#{WORKING_D}, " +
                "processors=#{THREADS}"
 
       cmd = "#{MOTHUR} " +
@@ -399,7 +399,7 @@ module Utils
     infiles.each do |fname|
 
       base = File.basename(fname, File.extname(fname))
-      uchime_ids = File.join OUT_D, "#{base}.ref.uchime.accnos"
+      uchime_ids = File.join WORKING_D, "#{base}.ref.uchime.accnos"
 
       File.open(uchime_ids, "rt").each_line do |line|
         id = line.chomp
@@ -801,7 +801,7 @@ module Utils
     unless debug # only delete if no debug flag is passed
       FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
 
-      FileUtils.rm Dir.glob File.join OUT_D, "mothur.*.logfile"
+      FileUtils.rm Dir.glob File.join WORKING_D, "mothur.*.logfile"
       FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
 
 
@@ -826,15 +826,22 @@ module Utils
                            "#{BASE}.all_sortmerna_db_hits.txt"))
 
     FileUtils.mv ZH_LOG, ZH_LOG_FINAL
+
+    # Move entire contents of the working directory into the final
+    # directory
+    FileUtils.mv Dir.glob(File.join(WORKING_D, "*")),
+                 FINAL_OUT_D
+
+    FileUtils.rm_r WORKING_D, secure: true
   end
 
   def self.create_needed_dirs
 
-    AbortIf::Abi.abort_if File.exists?(OUT_D),
-                          "Outdir '#{OUT_D}' already exists. " +
+    AbortIf::Abi.abort_if File.exists?(FINAL_OUT_D),
+                          "Outdir '#{FINAL_OUT_D}' already exists. " +
                           "Choose a different outdir."
 
-    Dir.try_mkdir OUT_D
+    Dir.try_mkdir FINAL_OUT_D
 
     Dir.try_mkdir BIOM_D
     Dir.try_mkdir CYTOSCAPE_D

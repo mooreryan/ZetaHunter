@@ -18,6 +18,35 @@
 
 require_relative File.join "lib", "lib_helper.rb"
 
+# Monkey patch of Tmpname::make_tmpname.
+#
+# Only lines with a comment have been changed, the rest is the same.
+#
+# The reason for this is that mothur doesn't like '-' characters in
+# the paths of anything.
+class Dir
+  module Tmpname
+    module_function
+
+    def make_tmpname((prefix, suffix), n)
+      prefix = (String.try_convert(prefix) or
+                raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
+      suffix &&= (String.try_convert(suffix) or
+                  raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
+      t = Time.now.strftime("%Y%m%d")
+
+      # Here we replace - with _
+      path = "#{prefix}#{t}_#{$$}_#{rand(0x100000000).to_s(36)}".dup
+
+      # And here as well
+      path << "_#{n}" if n
+
+      path << suffix if suffix
+      path
+    end
+  end
+end
+
 include Const
 include Utils
 
@@ -124,14 +153,18 @@ if opts[:outdir].nil?
   Trollop.die :outdir, "Specify an output directory"
 end
 
-TMP_OUT_D   = File.join opts[:outdir], "tmp"
-DANGEROUS_D = File.join opts[:outdir], "dangerous_seqs"
-OTU_CALLS_D = File.join opts[:outdir], "otu_calls"
-LOG_D       = File.join opts[:outdir], "log"
-MISC_DIR    = File.join opts[:outdir], "misc"
-BIOM_D      = File.join opts[:outdir], "biom"
+WORKING_D = Dir.mktmpdir
+
+TMP_OUT_D   = File.join WORKING_D, "tmp"
+DANGEROUS_D = File.join WORKING_D, "dangerous_seqs"
+OTU_CALLS_D = File.join WORKING_D, "otu_calls"
+LOG_D       = File.join WORKING_D, "log"
+MISC_DIR    = File.join WORKING_D, "misc"
+BIOM_D      = File.join WORKING_D, "biom"
 CHIMERA_D   = File.join DANGEROUS_D, "chimera_details"
-CYTOSCAPE_D = File.join opts[:outdir], "cytoscape"
+CYTOSCAPE_D = File.join WORKING_D, "cytoscape"
+
+FINAL_OUT_D = opts[:outdir]
 
 ######################################################################
 # set up logger
@@ -224,15 +257,34 @@ AbortIf::Abi.abort_unless check, msg
 # clean file names for mothur
 #############################
 
-opts[:inaln] = opts[:inaln].map { |fname| File.clean_and_copy fname }
+# opts[:inaln] = opts[:inaln].map { |fname| File.clean_and_copy fname }
 
-opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
-opts[:mask]        = File.clean_and_copy opts[:mask]
-opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
+# opts[:db_otu_info] = File.clean_and_copy opts[:db_otu_info]
+# opts[:mask]        = File.clean_and_copy opts[:mask]
+# opts[:db_seqs]     = File.clean_and_copy opts[:db_seqs]
 
-opts[:outdir] = File.clean_fname opts[:outdir]
+# opts[:outdir] = File.clean_fname opts[:outdir]
 
-OUT_D = opts[:outdir]
+def simple_clean_and_copy orig_fname
+  basename = File.basename orig_fname
+  clean_basename = File.clean_fname basename
+
+  new_fname = File.join WORKING_D, clean_basename
+
+  FileUtils.cp orig_fname, new_fname
+
+  new_fname
+end
+
+# The following files will be used in mother and need to have clean
+# fnames
+
+clean_inaln_fnames =
+  opts[:inaln].map { |fname| simple_clean_and_copy fname }
+
+clean_db_otu_info_fname = simple_clean_and_copy opts[:db_otu_info]
+clean_mask_fname        = simple_clean_and_copy opts[:mask]
+clean_db_seqs_fname     = simple_clean_and_copy opts[:db_seqs]
 
 #############################
 # clean file names for mothur
@@ -249,15 +301,16 @@ SAMPLE_TO_FNAME_F =
             "#{BASE}.sample_id_to_fname.txt"
 
 Time.time_it("Write sample to file name map", AbortIf::Abi.logger) do
-  Utils.write_sample_to_file_name_map SAMPLE_TO_FNAME_F, opts[:inaln]
+  Utils.write_sample_to_file_name_map SAMPLE_TO_FNAME_F, clean_inaln_fnames
 end
 
+clean_inaln_ungzip_fnames = nil
 Time.time_it("Unzip if needed", AbortIf::Abi.logger) do
-  opts[:inaln] = Utils.ungzip_if_needed opts[:inaln], TMP_OUT_D
+  clean_inaln_ungzip_fnames = Utils.ungzip_if_needed clean_inaln_fnames, TMP_OUT_D
 end
 
 CHIMERA_DETAILS =
-  File.join OUT_D, "*.{pintail,uchime,slayer}.*"
+  File.join WORKING_D, "*.{pintail,uchime,slayer}.*"
 
 CLUSTER_ME_F = File.join TMP_OUT_D, "cluster_me.fa"
 CLUSTER_ME_DIST_F = File.join TMP_OUT_D, "cluster_me.phylip.dist"
@@ -293,7 +346,7 @@ PROBABLY_NOT_ZETAS_F =
 INPUT_UNALN_F = File.join TMP_OUT_D, "#{BASE}.unaln.fa"
 
 sortme_blast_f =
-  File.join OUT_D, "#{BASE}.unlan.sortme_blast"
+  File.join WORKING_D, "#{BASE}.unlan.sortme_blast"
 
 CLOSEST_SEQS_F =
   File.join MISC_DIR, "#{BASE}.closest_db_seqs.txt"
@@ -330,7 +383,7 @@ total_entropy            = 0
 ##############################
 
 Time.time_it("Process input data", AbortIf::Abi.logger) do
-  Utils.process_input_alns files: opts[:inaln],
+  Utils.process_input_alns files: clean_inaln_ungzip_fnames,
                            seq_ids: input_ids,
                            seqs: input_seqs,
                            gap_posns: gap_posns
@@ -350,15 +403,15 @@ Time.time_it("Read entropy info", AbortIf::Abi.logger) do
 end
 
 Time.time_it("Read db OTU metadata", AbortIf::Abi.logger) do
-  db_otu_info = read_otu_metadata opts[:db_otu_info]
+  db_otu_info = read_otu_metadata clean_db_otu_info_fname
 end
 
 Time.time_it("Read mask info", AbortIf::Abi.logger) do
-  mask = read_mask opts[:mask]
+  mask = read_mask clean_mask_fname
 end
 
 Time.time_it("Update shared gap posns with db seqs", AbortIf::Abi.logger) do
-  Utils.process_input_aln file: opts[:db_seqs],
+  Utils.process_input_aln file: clean_db_seqs_fname,
                     seq_ids: db_seq_ids,
                     seqs: db_seqs,
                     gap_posns: gap_posns
@@ -416,12 +469,12 @@ if opts[:check_chimeras]
   ####################################################################
 
   Time.time_it("Uchime", AbortIf::Abi.logger) do
-    Utils.run_uchime opts[:inaln]
+    Utils.run_uchime clean_inaln_ungzip_fnames
   end
 
-  # There will be one uchime_ids file per opts[:inaln] fname
+  # There will be one uchime_ids file per clean_inaln_ungzip_fnames fname
   Time.time_it("Read uchime chimeras", AbortIf::Abi.logger) do
-    Utils.read_uchime_chimeras opts[:inaln], chimeric_ids
+    Utils.read_uchime_chimeras clean_inaln_ungzip_fnames, chimeric_ids
   end
 
   Time.time_it("Write chimeric seqs", AbortIf::Abi.logger) do
@@ -439,7 +492,7 @@ end
 
 
 Time.time_it("Unalign DB seqs if needed", AbortIf::Abi.logger) do
-  Utils.unalign_seqs_from_file opts[:db_seqs], DB_SEQS_UNALN
+  Utils.unalign_seqs_from_file clean_db_seqs_fname, DB_SEQS_UNALN
 end
 
 Time.time_it("Unalign input seqs", AbortIf::Abi.logger) do
@@ -531,7 +584,7 @@ end
 #################
 
 Time.time_it("Write biom file", AbortIf::Abi.logger) do
-  Utils.write_biom_file opts[:inaln]
+  Utils.write_biom_file clean_inaln_ungzip_fnames
 end
 
 #################
@@ -555,7 +608,16 @@ end
 # clean up
 ##########
 
+
+
 Time.time_it("Clean up", AbortIf::Abi.logger) do
+  # Delete these files specifically
+  FileUtils.rm [clean_inaln_fnames,
+                clean_inaln_ungzip_fnames,
+                clean_db_otu_info_fname,
+                clean_mask_fname,
+                clean_db_seqs_fname].flatten
+
   Utils.clean_up sortme_blast_f, opts[:debug]
 end
 
@@ -563,26 +625,30 @@ end
 # clean up
 ######################################################################
 
+def to_outdir fname
+  fname.sub WORKING_D, FINAL_OUT_D
+end
+
 AbortIf::Abi.logger.info { "FINAL FILE OUTPUTS" }
 
-AbortIf::Abi.logger.info { "Cytoscape node table: #{NODES_F}" }
-AbortIf::Abi.logger.info { "Cytoscape edge table: #{EDGES_F}" }
+AbortIf::Abi.logger.info { "Cytoscape node table: #{to_outdir NODES_F}" }
+AbortIf::Abi.logger.info { "Cytoscape edge table: #{to_outdir EDGES_F}" }
 
-AbortIf::Abi.logger.info { "Biom file:            #{BIOM_F}" }
+AbortIf::Abi.logger.info { "Biom file:            #{to_outdir BIOM_F}" }
 
-AbortIf::Abi.logger.info { "Final OTUs:           #{FINAL_OTU_CALLS_F}" }
-AbortIf::Abi.logger.info { "Denovo OTUs:          #{DENOVO_OTUS_F}" }
-AbortIf::Abi.logger.info { "Closed ref OTUs:      #{DISTANCE_BASED_OTUS_F}" }
+AbortIf::Abi.logger.info { "Final OTUs:           #{to_outdir FINAL_OTU_CALLS_F}" }
+AbortIf::Abi.logger.info { "Denovo OTUs:          #{to_outdir DENOVO_OTUS_F}" }
+AbortIf::Abi.logger.info { "Closed ref OTUs:      #{to_outdir DISTANCE_BASED_OTUS_F}" }
 
-AbortIf::Abi.logger.info { "SortMeRNA output:     #{sortme_blast_f}" }
-AbortIf::Abi.logger.info { "Closest DB seqs:      #{CLOSEST_SEQS_F}" }
+AbortIf::Abi.logger.info { "SortMeRNA output:     #{to_outdir sortme_blast_f}" }
+AbortIf::Abi.logger.info { "Closest DB seqs:      #{to_outdir CLOSEST_SEQS_F}" }
 
-AbortIf::Abi.logger.info { "Chimeras:             #{CHIMERIC_SEQS_F}" }
-AbortIf::Abi.logger.info { "Probably not zetas:   #{PROBABLY_NOT_ZETAS_F}" }
+AbortIf::Abi.logger.info { "Chimeras:             #{to_outdir CHIMERIC_SEQS_F}" }
+AbortIf::Abi.logger.info { "Probably not zetas:   #{to_outdir PROBABLY_NOT_ZETAS_F}" }
 
-AbortIf::Abi.logger.info { "Sample to fname map:  #{SAMPLE_TO_FNAME_F}" }
+AbortIf::Abi.logger.info { "Sample to fname map:  #{to_outdir SAMPLE_TO_FNAME_F}" }
 
-AbortIf::Abi.logger.info { "ZetaHunter log:       #{ZH_LOG_FINAL}" }
-AbortIf::Abi.logger.info { "Mothur log:           #{MOTHUR_LOG}" }
+AbortIf::Abi.logger.info { "ZetaHunter log:       #{to_outdir ZH_LOG_FINAL}" }
+AbortIf::Abi.logger.info { "Mothur log:           #{to_outdir MOTHUR_LOG}" }
 
 STDERR.puts Const::LOGO
