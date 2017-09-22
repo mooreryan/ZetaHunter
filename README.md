@@ -13,7 +13,7 @@ by a reference sequence database.
 
 By default, ZetaHunter uses a curated database of full-length,
 non-chimeric, Zetaproteobacteria SSU rRNA gene sequences derived from
-arb SILVA (release 123) and Zetaproteobacteria genomes from JGI's
+arb SILVA (release 128) and Zetaproteobacteria genomes from JGI's
 Integrated Microbial Genomes (IMG). OTU definitions are the same as
 those suggested by McAllister et al. (2011) at 97% identity, with
 novel OTUs discovered since that publication named ZetaOTU29 and
