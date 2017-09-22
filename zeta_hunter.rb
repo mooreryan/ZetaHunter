@@ -129,7 +129,7 @@ opts = Trollop.options do
 
   opt(:base, "Base name for output files", default: "ZH_#{START_TIME}")
 
-  opt(:debug, "Debug mode, don't delete tmp files")
+  opt(:debug, "Debug mode, don't delete tmp files or clean up the working dir (the out dir will be empty)")
 end
 
 THREADS        = opts[:threads]
@@ -265,11 +265,18 @@ AbortIf::Abi.abort_unless check, msg
 
 # opts[:outdir] = File.clean_fname opts[:outdir]
 
-def simple_clean_and_copy orig_fname
+def simple_clean_and_copy orig_fname, new_dir
   basename = File.basename orig_fname
   clean_basename = File.clean_fname basename
 
-  new_fname = File.join WORKING_D, clean_basename
+  # Try to make the dir if it isn't made yet
+  begin
+    FileUtils.mkdir_p new_dir
+  rescue Errno::EEXIST => e
+    AbortIf::Abi.logger.debug { "#{new_dir} already exists. No action taken" }
+  end
+
+  new_fname = File.join new_dir, clean_basename
 
   FileUtils.cp orig_fname, new_fname
 
@@ -280,11 +287,14 @@ end
 # fnames
 
 clean_inaln_fnames =
-  opts[:inaln].map { |fname| simple_clean_and_copy fname }
+  opts[:inaln].map { |fname| simple_clean_and_copy fname, TMP_OUT_D }
 
-clean_db_otu_info_fname = simple_clean_and_copy opts[:db_otu_info]
-clean_mask_fname        = simple_clean_and_copy opts[:mask]
-clean_db_seqs_fname     = simple_clean_and_copy opts[:db_seqs]
+clean_db_otu_info_fname = simple_clean_and_copy opts[:db_otu_info],
+                                                WORKING_D
+clean_mask_fname        = simple_clean_and_copy opts[:mask],
+                                                WORKING_D
+clean_db_seqs_fname     = simple_clean_and_copy opts[:db_seqs],
+                                                WORKING_D
 
 #############################
 # clean file names for mothur
@@ -608,17 +618,29 @@ end
 # clean up
 ##########
 
-
-
 Time.time_it("Clean up", AbortIf::Abi.logger) do
-  # Delete these files specifically
-  FileUtils.rm [clean_inaln_fnames,
-                clean_inaln_ungzip_fnames,
-                clean_db_otu_info_fname,
-                clean_mask_fname,
-                clean_db_seqs_fname].flatten
+  unless opts[:debug]
+    # Delete these files specifically
+    files_to_delete = [clean_inaln_fnames,
+                       clean_inaln_ungzip_fnames,
+                       clean_db_otu_info_fname,
+                       clean_mask_fname,
+                       clean_db_seqs_fname].flatten.uniq
 
-  Utils.clean_up sortme_blast_f, opts[:debug]
+    files_to_delete.each do |fname|
+      begin
+        FileUtils.rm fname
+      rescue SystemCallError => e
+        AbortIf::Abi.logger.warn do
+          "Could not delete '#{fname}'. " +
+            "This likely is not an issue, but your outdir might " +
+            "be messy. Error: #{e.inspect}"
+        end
+      end
+    end
+
+    Utils.clean_up sortme_blast_f, opts[:debug]
+  end
 end
 
 ##########

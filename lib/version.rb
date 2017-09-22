@@ -17,5 +17,5 @@
 # along with ZetaHunter.  If not, see <http://www.gnu.org/licenses/>.
 
 module ZetaHunter
-  VERSION = "0.2.2"
+  VERSION = "0.2.3"
 end

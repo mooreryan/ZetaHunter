@@ -798,26 +798,49 @@ module Utils
   end
 
   def self.clean_up sortme_blast, debug
-    unless debug # only delete if no debug flag is passed
-      FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
+    files_to_delete = []
 
-      FileUtils.rm Dir.glob File.join WORKING_D, "mothur.*.logfile"
-      FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
+    files_to_delete << Dir.glob(File.join ZH_PWD_DIR, "*.tmp.uchime_formatted")
+    files_to_delete << Dir.glob(File.join WORKING_D, "mothur.*.logfile")
+    files_to_delete << Dir.glob(File.join ZH_PWD_DIR, "mothur.*.logfile")
 
-
-      # For sleep command, see
-      # https://github.com/mooreryan/ZetaHunter/issues/37
-      sleep 2
+    files_to_delete.flatten.uniq.each do |fname|
       begin
-        FileUtils.rm_r TMP_OUT_D, secure: true
-      rescue Errno::ENOTEMPTY => e
-        AbortIf::Abi.logger.warning do
-          "Got Errno::ENOTEMPTY when trying to delete " +
-            "#{TMP_OUT_D}. Not deleting it. Error: " +
-            "#{e.inspect}"
+        FileUtils.rm fname
+      rescue SystemCallError => e
+        AbortIf::Abi.logger.warn do
+          "Could not delete '#{fname}'. " +
+            "This likely is not an issue, but your outdir might " +
+            "be messy. Error: #{e.inspect}"
         end
       end
     end
+
+    # For sleep command, see
+    # https://github.com/mooreryan/ZetaHunter/issues/37
+    sleep 2
+    begin
+      FileUtils.rm_r TMP_OUT_D, secure: true
+    rescue Errno::ENOTEMPTY => e
+      AbortIf::Abi.logger.warn do
+        "Got Errno::ENOTEMPTY when trying to delete " +
+          "#{TMP_OUT_D}. Not deleting it. Error: " +
+          "#{e.inspect}"
+      end
+    rescue SystemCallError => e
+      AbortIf::Abi.logger.warn do
+        "Could not delete '#{fname}'. " +
+          "This likely is not an issue, but your outdir might " +
+          "be messy. Error: #{e.inspect}"
+      end
+    end
+
+    # unless debug # only delete if no debug flag is passed
+    #   FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "*.tmp.uchime_formatted"
+
+    #   FileUtils.rm Dir.glob File.join WORKING_D, "mothur.*.logfile"
+    #   FileUtils.rm Dir.glob File.join ZH_PWD_DIR, "mothur.*.logfile"
+    # end
 
     FileUtils.mv Dir.glob(CHIMERA_DETAILS), CHIMERA_D
 
@@ -827,8 +850,9 @@ module Utils
 
     FileUtils.mv ZH_LOG, ZH_LOG_FINAL
 
-    # Move entire contents of the working directory into the final
-    # directory
+    # Move entire contents of the working directory (that haven't yet
+    # been deleted) into the final directory
+
     FileUtils.mv Dir.glob(File.join(WORKING_D, "*")),
                  FINAL_OUT_D
 
@@ -849,7 +873,14 @@ module Utils
     Dir.try_mkdir LOG_D
     Dir.try_mkdir MISC_DIR
     Dir.try_mkdir OTU_CALLS_D
-    Dir.try_mkdir TMP_OUT_D
+
+    # This dir may have already been made in a previous call to
+    # simple_clea_and_copy
+    begin
+      FileUtils.mkdir_p TMP_OUT_D
+    rescue Errno::EEXIST => e
+      AbortIf::Abi.logger.debug { "#{new_dir} already exists. No action taken" }
+    end
 
     Dir.try_mkdir CHIMERA_D
   end
