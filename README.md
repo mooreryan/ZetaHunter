@@ -47,45 +47,38 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 ## Running ZetaHunter with Docker ##
 
 If you don't have Docker, follow the instructions to install it here:
-[Mac](https://docs.docker.com/mac/),
-[Linux](https://docs.docker.com/linux/),
-[Windows](https://docs.docker.com/windows/).
+[Mac](https://docs.docker.com/docker-for-mac/),
+[Linux](https://docs.docker.com/engine/installation/),
+[Windows](https://docs.docker.com/docker-for-windows/).
 
 *Note*: If you have Windows, running `ZetaHunter` with Docker is the
  only supported option.
 
 ### Mac ###
 
-After installing Docker, open the Launchpad and click the `Docker
-Quickstart Terminal` icon.
-
-In the terminal window that opens, enter the following command
-
-    $ docker pull mooreryan/zetahunter
-
-to download the latest `ZetaHunter` Docker image to your computer.
-
-*Note*: If you already have the `ZetaHunter` Docker image, this is
- only necessary to ensure you have the latest version of `ZetaHunter`.
+After installing Docker, open the Launchpad and click the `Docker`
+icon.
 
 Download
 [this](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter)
-perl script, and change the permissions to executable.
+perl script, and change the permissions to executable. In this case,
+it will be placed in the following directory `~/software/ZetaHunter`.
 
-    $ \curl "https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter" > ~/Downloads/run_zeta_hunter
-    $ chmod 755 ~/Downloads/run_zeta_hunter
+    $ mkdir -p ~/software/ZetaHunter
+    $ \curl "https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter" > ~/software/ZetaHunter/run_zeta_hunter
+    $ chmod 755 ~/software/ZetaHunter/run_zeta_hunter
 
-Move `run_zeta_hunter` to somewhere on your path.
+You can create a symbolic link to somewhere on your path so that you
+can use the `run_zeta_hunter` command from any folder. Assuming that
+you have `/usr/local/bin` on your path, you can use this command.
 
-    $ sudo mv ~/Downloads/run_zeta_hunter /usr/local/bin
+    $ sudo ln -s $HOME/software/ZetaHunter/run_zeta_hunter /usr/local/bin
 
-Try it out!
+If you don't want to use a symbolic link, you can also move the program to your path directly.
 
-    $ which run_zeta_hunter
+    $ sudo mv ~/software/ZetaHunter/run_zeta_hunter /usr/local/bin
 
-should spit out
-
-    /usr/local/bin/run_zeta_hunter
+Try it out! Running this command
 
     $ run_zeta_hunter -h
 
