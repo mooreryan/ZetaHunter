@@ -8,9 +8,11 @@ my $expand = 1;
 
 foreach my $arg (@ARGV) {
     if ($arg =~ /^-/) { # arg is a flag
+
+        # push the flag onto the arg list
         push @args, $arg;
 
-        # check if next arg should expand
+        # check if next arg should expand or not
         if ($arg eq "-t" || $arg eq "--threads" ||
             $arg eq "-c" || $arg eq "--cluster-method" ||
             $arg eq "-a" || $arg eq "--base") {
@@ -21,9 +23,9 @@ foreach my $arg (@ARGV) {
         }
     } elsif ($expand) { # an arg that is a path, expand it
         my $path = File::Spec->rel2abs($arg);
-        push @args, $path;
+        push @args, "\'$path\'";
     } else { # an arg that is not a path and not a flag
-        push @args, $arg;
+        push @args, "\'$arg\'";
     }
 }
 
