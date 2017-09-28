@@ -18,3 +18,7 @@ test_files/full_and_part_output
 test_files/both_out/
 diffout
 lib/old_zh_code.rb
+
+SPIFFY_TEST
+TEST_OUTDIR
+lala.rb

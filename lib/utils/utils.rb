@@ -483,7 +483,7 @@ module Utils
       pid = pid.to_f
       qcov = rest.last.to_f
 
-      if qcov >= MIN_QCOV
+      if qcov >= MIN_SORTMERNA_QCOV
         insert_new_entry =
           (closed_ref_otus.has_key?(user_seq) &&
            closed_ref_otus[user_seq][:pid] < pid) || # current hit is a better hit
