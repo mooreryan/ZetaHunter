@@ -131,9 +131,31 @@ module Const
 
   START_TIME = Time.now.strftime("%Y_%m_%d_%H_%M")
 
+  # Any seq with % entropy less than this will be considered a
+  # fragment
+  FRAGMENT_CUTOFF = 0.75
+
   ###########
   # constants
   ####################################################################
+
+  ####################################################################
+  # seq flag bitmask
+  ##################
+
+  FLAG_CHIMERA     = 0b10000
+  FLAG_OG_GTE_97   = 0b01000
+  FLAG_OG_LT_97    = 0b00100
+  FLAG_SINGLETON   = 0b00010
+  FLAG_FRAGMENT    = 0b00001
+
+  # Holds the seq flags
+  SEQ_FLAG = Hash.new 0
+
+  ##################
+  # seq flag bitmask
+  ####################################################################
+
 
   ####################################################################
   # seanie face
