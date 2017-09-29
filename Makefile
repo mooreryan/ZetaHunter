@@ -14,17 +14,13 @@ SPIFFY_D = $(TEST_FILE_D)/spiffy_test
 
 .PHONY: test
 .PHONY: test_docker
-.PHONY: test_fast
 .PHONY: test_spiffy
 
 test:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES)-o $(TEST_OUT_D) -t 4
+	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4
 
 test_docker:
-	rm -r $(TEST_OUT_D); time bin/run_zeta_hunter -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4
-
-test_fast:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4 --no-check-chimeras
+	rm -r $(TEST_OUT_D); time bin/run_zeta_hunter -i $(SPIFFY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/spiffy_final_otu_calls.txt
 
 test_spiffy:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SPIFFY_D)/*/* -o $(TEST_OUT_D) -t 4
+	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SPIFFY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/spiffy_final_otu_calls.txt

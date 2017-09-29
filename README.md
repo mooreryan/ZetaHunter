@@ -157,23 +157,6 @@ http://www.mothur.org/wiki/Silva_reference_files
 
 Lines beginning with `#` are considered comments.
 
-## ZH outputs
-
-### dangerous_seqs
-
-This folder contains chimeras and seqs that ZH has flagged as not
-likely to be Zetaproteobacteria a Zeta sequence.
-
-Seqs that are greater than or equal to 97% identity to an outgroup in
-the gold databse in the closed reference OTU calling step are placed
-in the `probably_not_zetas` file. Also, a sequence that makes it to
-the de novo OTU calling step, but is in an OTU of size 1 and that was
-closest to an outgroup in the closed reference OTU calling step (but
-less than 97% identity to its outgroup hit) will be in the
-`probably_not_zetas` file. Finally, sequences flagged as chimeras will
-be in the `probably_not_zetas` file as well as the likely chimera
-file.
-
 ## Other info ##
 
 ### Gap positions ###
