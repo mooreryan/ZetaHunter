@@ -27,6 +27,47 @@ module Utils
   #   Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
   # end
 
+  def flag_to_s flag
+    str = []
+
+    if FLAG_CHIMERA & flag != 0
+      str << "CHIMERA"
+    end
+
+    if FLAG_OG_GTE_97 & flag != 0
+      str << "OG_GTE_97"
+    end
+
+    if FLAG_OG_LT_97 & flag != 0
+      str << "OG_LT_97"
+    end
+
+    if FLAG_SINGLETON & flag != 0
+      str << "SINGLETON"
+    end
+
+    if FLAG_FRAGMENT & flag != 0
+      str << "FRAGMENT"
+    end
+
+    if str.empty?
+      "0"
+    else
+      str.sort.join "|"
+    end
+  end
+
+  # Flags the CLEAN id and the regular one
+  def update_seq_flag seqid, flag
+    # AbortIf::Abi.logger.info {
+    #   "Flagging #{seqid} as #{flag.to_s(2)}"
+    # }
+
+    # If they are the same, the second one won't do anything
+    SEQ_FLAG[seqid] |= flag
+    SEQ_FLAG[clean(seqid)] |= flag
+  end
+
   def remove_all_gaps seq
     seq.gsub /\p{^Alpha}/, ""
   end
@@ -169,7 +210,7 @@ module Utils
 
       id = clean head.split(" ").first
 
-      msg = "Seq ID '#{id}' is repeated in file '#{file}'"
+      msg = "Seq ID '#{id}' is repeated in file '#{file}'. Previous rec was #{seqs[id]}"
       AbortIf::Abi.abort_if seq_ids.include?(id), msg
 
       seq_ids << id
@@ -358,6 +399,10 @@ module Utils
 
       seq_entropy = get_seq_entropy seqs[:masked], entropy
       seq_entropys[head] = seq_entropy
+
+      if seq_entropy[:perc_total_entropy] < FRAGMENT_CUTOFF
+        update_seq_flag head, FLAG_FRAGMENT
+      end
     end
 
     seq_entropys
@@ -404,6 +449,8 @@ module Utils
       File.open(uchime_ids, "rt").each_line do |line|
         id = line.chomp
         chimeric_ids.store_in_array id, "uchime"
+
+        update_seq_flag id, FLAG_CHIMERA
       end
     end
   end
@@ -510,9 +557,6 @@ module Utils
     closest_to_outgroups = []
     cluster_these_user_seqs = {}
 
-    nzf = File.open(PROBABLY_NOT_ZETAS_F, "w")
-    nzf.puts %w[#SeqID Sample DBHit PID].join "\t"
-
     File.open(closest_seqs_outf, "w") do |close_f|
       File.open(DISTANCE_BASED_OTUS_F, "w") do |otu_f|
         close_f.puts ["#SeqID",
@@ -560,28 +604,30 @@ module Utils
           end
 
           if outgroup_names.include? info[:hit] # is nearest an outgroup
+            if info[:pid] >= 97.0
+              update_seq_flag user_seq, FLAG_OG_GTE_97
+            else
+              update_seq_flag user_seq, FLAG_OG_LT_97
+            end
+
             closest_to_outgroups << user_seq # is output
           end
 
+          # Literally everything that is within 3% of a DB seq will be
+          # written here now, even if it is to an outgroup. The flag
+          # will explain things.
           if info[:pid] < 97.0 # will be clustered later
             AbortIf::Abi.assert input_seqs.has_key? user_seq
             cluster_these_user_seqs[user_seq] = input_seqs[user_seq] # is output
           else # is a good closed reference call
-            if outgroup_names.include? info[:hit] # >= 97 but closest to outgroup
-              nzf.puts [user_seq,
+            otu_f.puts [user_seq,
                         input_seqs[user_seq][:lib],
+                        db_otu_info[info[:hit]][:otu],
+                        perc_total_entropy,
+                        perc_bases_in_mask,
                         info[:hit],
-                        info[:pid]].join "\t"
-            else # >= 97 % but NOT closest to an outgroup
-              otu_f.puts [user_seq,
-                          input_seqs[user_seq][:lib],
-                          db_otu_info[info[:hit]][:otu],
-                          perc_total_entropy,
-                          perc_bases_in_mask,
-                          info[:hit],
-                          info[:pid],
-                          info[:qcov]].join "\t"
-            end
+                        info[:pid],
+                        info[:qcov]].join "\t"
           end
         end
       end
@@ -590,8 +636,6 @@ module Utils
     AbortIf::Abi.logger.debug { "Closest DB seqs: #{closest_seqs_outf}" }
     AbortIf::Abi.logger.debug { "Distance based OTU calls written " +
                                 "to #{DISTANCE_BASED_OTUS_F}" }
-
-    nzf.close
 
     return [closest_to_outgroups, cluster_these_user_seqs]
   end
@@ -673,61 +717,55 @@ module Utils
 
     seqs_in_denovo_otus_file = []
 
-    File.open(PROBABLY_NOT_ZETAS_F, "a") do |nzf|
+    File.open(DENOVO_OTUS_F, "w") do |f|
+      f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
 
-      File.open(DENOVO_OTUS_F, "w") do |f|
-        f.puts %w[#SeqID Sample OTU PercEntropy PercMaskedBases OTUComp].join "\t"
+      # This file contains seqs from the clusters_these_user_seqs
+      # array only. Not closest_to_outgroups (from the
+      # write_closest_ref_seqs_and_otu_calls metdod).
+      File.open(otu_file, "rt").each_line do |line|
+        otu, id_str = line.chomp.split "\t"
+        ids = id_str.split ","
+        otu_size = ids.count
 
-        # This file contains seqs from the clusters_these_user_seqs
-        # array only. Not closest_to_outgroups (from the
-        # write_closest_ref_seqs_and_otu_calls metdod).
-        File.open(otu_file, "rt").each_line do |line|
-          otu, id_str = line.chomp.split "\t"
-          ids = id_str.split ","
-          otu_size = ids.count
+        AbortIf::Abi.abort_if otu_size.zero?,
+                              "OTU '#{otu}' had size zero"
 
-          AbortIf::Abi.abort_if otu_size.zero?,
-                                "OTU '#{otu}' had size zero"
+        otu_calls = get_otu_calls ids, db_otu_info, input_ids
 
-          otu_calls = get_otu_calls ids, db_otu_info, input_ids
+        otu_call_counts = get_otu_call_counts otu_calls
+        otu_call = get_otu_call otu_call_counts
 
-          otu_call_counts = get_otu_call_counts otu_calls
-          otu_call = get_otu_call otu_call_counts
+        only_input_ids = ids.select { |id| input_ids.include?(id) }
 
-          only_input_ids = ids.select { |id| input_ids.include?(id) }
+        only_input_ids.each do |id|
+          AbortIf::Abi.assert_keys input_seqs, id
+          sample = input_seqs[id][:lib]
 
-          only_input_ids.each do |id|
-            AbortIf::Abi.assert_keys input_seqs, id
-            sample = input_seqs[id][:lib]
+          # TODO if an otu contains at least one seq closest to a non
+          # zeta, flag all sequences in that otu as possibly not zetas
 
-            # TODO if an otu contains at least one seq closest to a non
-            # zeta, flag all sequences in that otu as possibly not zetas
-
-            if otu_size == 1 && closest_to_outgroups.include?(id)
-              nzf.puts [id,
-                        sample,
-                        closed_ref_otus[id][:hit],
-                        closed_ref_otus[id][:pid]].join "\t"
-
-            else
-              AbortIf::Abi.assert_keys masked_input_seq_entropy, id
-              perc_entropy = masked_input_seq_entropy[id]
-              seqs_in_denovo_otus_file << id
-              f.puts [id,
-                      sample,
-                      otu_call,
-                      perc_entropy[:perc_total_entropy],
-                      perc_entropy[:perc_bases_in_mask],
-                      otu_call_counts.inspect].join "\t"
-            end
+          if otu_size == 1
+            update_seq_flag id, FLAG_SINGLETON
           end
+
+          # Now we are including these in the otu calls files. The
+          # flag will explain the risk.
+
+          AbortIf::Abi.assert_keys masked_input_seq_entropy, id
+          perc_entropy = masked_input_seq_entropy[id]
+          seqs_in_denovo_otus_file << id
+          f.puts [id,
+                  sample,
+                  otu_call,
+                  perc_entropy[:perc_total_entropy],
+                  perc_entropy[:perc_bases_in_mask],
+                  otu_call_counts.inspect].join "\t"
         end
       end
     end
 
-    AbortIf::Abi.logger.info { "seqs that probably are not Zetas: #{PROBABLY_NOT_ZETAS_F}" }
     AbortIf::Abi.logger.info { "de novo OTU calls written to #{DENOVO_OTUS_F}" }
-
   end
 
   def self.write_final_otu_calls
@@ -736,13 +774,22 @@ module Utils
               "Sample",
               "OTU",
               "PercEntropy",
-              "PercMaskedBases"].join "\t"
+              "PercMaskedBases",
+              "Flag"].join "\t"
 
       File.open(DISTANCE_BASED_OTUS_F, "rt").each_line do |line|
         unless line.start_with? "#"
-          seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
+          seq, sample, otu, ent, masked, hit, *rest = line.chomp.split "\t"
 
-          f.puts [seq, sample, otu, ent, masked].join "\t"
+          AbortIf::Abi.logger.debug { "Read #{seq} from closed ref otu file" }
+
+          flag = flag_to_s SEQ_FLAG[seq]
+
+          if otu == "OG"
+            f.puts [seq, sample, hit, ent, masked, flag].join "\t"
+          else
+            f.puts [seq, sample, otu, ent, masked, flag].join "\t"
+          end
         end
       end
 
@@ -750,7 +797,11 @@ module Utils
         unless line.start_with? "#"
           seq, sample, otu, ent, masked, *rest = line.chomp.split "\t"
 
-          f.puts [seq, sample, otu, ent, masked].join "\t"
+          AbortIf::Abi.logger.debug { "Read #{seq} from de novo otu file" }
+
+          flag = flag_to_s SEQ_FLAG[seq]
+
+          f.puts [seq, sample, otu, ent, masked, flag].join "\t"
         end
       end
     end

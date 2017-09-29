@@ -133,7 +133,7 @@ module Const
 
   # Any seq with % entropy less than this will be considered a
   # fragment
-  FRAGMENT_CUTOFF = 0.75
+  FRAGMENT_CUTOFF = 75
 
   ###########
   # constants

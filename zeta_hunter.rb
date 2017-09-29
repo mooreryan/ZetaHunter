@@ -349,10 +349,6 @@ BIOM_F =
 CHIMERIC_SEQS_F =
   File.join DANGEROUS_D, "#{BASE}.dangerous_seqs.chimeras.txt"
 
-PROBABLY_NOT_ZETAS_F =
-  File.join DANGEROUS_D,
-            "#{BASE}.dangerous_seqs.probably_not_zetas.txt"
-
 INPUT_UNALN_F = File.join TMP_OUT_D, "#{BASE}.unaln.fa"
 
 sortme_blast_f =
@@ -427,8 +423,15 @@ Time.time_it("Update shared gap posns with db seqs", AbortIf::Abi.logger) do
                     gap_posns: gap_posns
 end
 
+# Read both the clean ID and the orig ID in
 Time.time_it("Read outgroups", AbortIf::Abi.logger) do
-  outgroup_names = File.to_set OUTGROUPS
+  lines = []
+  Object::File.open(OUTGROUPS, "rt").each_line do |line|
+    lines << line.chomp
+    lines << clean(line.chomp)
+  end
+
+  outgroup_names = Set.new lines
 end
 
 ####################
@@ -666,7 +669,6 @@ AbortIf::Abi.logger.info { "SortMeRNA output:     #{to_outdir sortme_blast_f}" }
 AbortIf::Abi.logger.info { "Closest DB seqs:      #{to_outdir CLOSEST_SEQS_F}" }
 
 AbortIf::Abi.logger.info { "Chimeras:             #{to_outdir CHIMERIC_SEQS_F}" }
-AbortIf::Abi.logger.info { "Probably not zetas:   #{to_outdir PROBABLY_NOT_ZETAS_F}" }
 
 AbortIf::Abi.logger.info { "Sample to fname map:  #{to_outdir SAMPLE_TO_FNAME_F}" }
 
