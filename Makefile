@@ -10,17 +10,17 @@ TEST_FILES = $(TEST_FILE_D)/"kitties say meow.fa" \
              $(DIR_WITH_SPACES)/"ginger_ale.fa" \
              $(DIR_WITH_SPACES)/"pie is good.fa.gz" \
 
-SPIFFY_D = $(TEST_FILE_D)/spiffy_test
+SNAZZY_D = $(TEST_FILE_D)/snazzy_test
 
 .PHONY: test
 .PHONY: test_docker
-.PHONY: test_spiffy
+.PHONY: test_snazzy
 
 test:
 	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4
 
 test_docker:
-	rm -r $(TEST_OUT_D); time bin/run_zeta_hunter -i $(SPIFFY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/spiffy_final_otu_calls.txt
+	rm -r $(TEST_OUT_D); time bin/run_zeta_hunter -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/snazzy_final_otu_calls.txt
 
-test_spiffy:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SPIFFY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/spiffy_final_otu_calls.txt
+test_snazzy:
+	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/snazzy_final_otu_calls.txt
