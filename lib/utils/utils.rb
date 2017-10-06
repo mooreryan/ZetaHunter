@@ -93,21 +93,17 @@ module Utils
   end
 
   def gap? base
-    !NON_GAPS.include?(base)
+    base == "-" || base == "."
   end
 
   def get_gap_posns seq
-    # these_gap_posns = Set.new
-    # seq.each_char.with_index do |base, posn|
-    #   these_gap_posns << posn if gap?(base)
-    # end
-
     these_gap_posns = []
 
     seq.each_char.with_index do |base, idx|
-      is_gap = !NON_GAPS.include?(base) # faster to avoid gap? call
+      # Don't use the gap? method here for speed
+      is_gap = base == "-" || base == "."
 
-      these_gap_posns << idx if is_gap # gap?(base)
+      these_gap_posns << idx if is_gap
     end
 
     these_gap_posns

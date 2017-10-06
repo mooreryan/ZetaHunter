@@ -15,6 +15,7 @@ SNAZZY_D = $(TEST_FILE_D)/snazzy_test
 .PHONY: test
 .PHONY: test_docker
 .PHONY: test_snazzy
+.PHONY: profile_snazzy
 
 test:
 	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4
@@ -24,3 +25,6 @@ test_docker:
 
 test_snazzy:
 	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/snazzy_final_otu_calls.txt
+
+profile_snazzy:
+	rm -r $(TEST_OUT_D); time ruby-prof -p call_stack -f snazzy_profile.html zeta_hunter.rb -- -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/snazzy_final_otu_calls.txt
