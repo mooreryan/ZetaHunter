@@ -4,10 +4,10 @@ MAINTAINER Ryan Moore <moorer@udel.edu>
 
 RUN gem install bundler
 
-RUN \curl -sSL https://github.com/mooreryan/ZetaHunter/archive/v0.3.0.tar.gz \
+RUN \curl -sSL https://github.com/mooreryan/ZetaHunter/archive/v0.3.1.tar.gz \
     | tar -v -C /home -xz
 
-RUN mv /home/ZetaHunter-0.3.0 /home/ZetaHunter
+RUN mv /home/ZetaHunter-0.3.1 /home/ZetaHunter
 
 RUN bundle install --gemfile /home/ZetaHunter/Gemfile
 
