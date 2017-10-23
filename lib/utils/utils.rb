@@ -27,6 +27,10 @@ module Utils
   #   Hash.new { |hash, key| hash[key] = [] unless hash.has_key?(k) }
   # end
 
+  def has_ambiguous_bases? seq
+    seq.include?("N") || seq.include?("n")
+  end
+
   def flag_to_s flag
     str = []
 
@@ -46,14 +50,26 @@ module Utils
       str << "SINGLETON"
     end
 
-    if FLAG_FRAGMENT & flag != 0
-      str << "FRAGMENT"
+    if FLAG_DOUBLETON & flag != 0
+      str << "DOUBLETON"
+    end
+
+    if FLAG_LARGE_FRAGMENT & flag != 0
+      str << "FRAGMENT_SMALL"
+    end
+
+    if FLAG_SMALL_FRAGMENT & flag != 0
+      str << "FRAGMENT_LARGE"
+    end
+
+    if FLAG_AMBIGUOUS_BASES & flag != 0
+      str << "AMBIGUOUS_BASES"
     end
 
     if str.empty?
       "0"
     else
-      str.sort.join "|"
+      str.sort.join ","
     end
   end
 
@@ -203,8 +219,11 @@ module Utils
             "'#{seq.length}'. Should be '#{Const::SILVA_ALN_LEN}'"
       AbortIf::Abi.abort_unless seq.length == Const::SILVA_ALN_LEN, msg
 
-
       id = clean head.split(" ").first
+
+      if has_ambiguous_bases? seq
+        update_seq_flag id, FLAG_AMBIGUOUS_BASES
+      end
 
       msg = "Seq ID '#{id}' is repeated in file '#{file}'. Previous rec was #{seqs[id]}"
       AbortIf::Abi.abort_if seq_ids.include?(id), msg
@@ -396,8 +415,10 @@ module Utils
       seq_entropy = get_seq_entropy seqs[:masked], entropy
       seq_entropys[head] = seq_entropy
 
-      if seq_entropy[:perc_total_entropy] < FRAGMENT_CUTOFF
-        update_seq_flag head, FLAG_FRAGMENT
+      if seq_entropy[:perc_total_entropy] < SMALL_FRAGMENT_CUTOFF
+        update_seq_flag head, FLAG_SMALL_FRAGMENT
+      elsif seq_entropy[:perc_total_entropy] < LARGE_FRAGMENT_CUTOFF
+        update_seq_flag head, FLAG_LARGE_FRAGMENT
       end
     end
 
@@ -743,6 +764,8 @@ module Utils
 
           if otu_size == 1
             update_seq_flag id, FLAG_SINGLETON
+          elsif otu_size == 2
+            update_seq_flag id, FLAG_DOUBLETON
           end
 
           # Now we are including these in the otu calls files. The
