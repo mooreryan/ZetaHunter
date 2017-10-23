@@ -133,7 +133,12 @@ module Const
 
   # Any seq with % entropy less than this will be considered a
   # fragment
-  FRAGMENT_CUTOFF = 75
+  LARGE_FRAGMENT_CUTOFF = 75
+  SMALL_FRAGMENT_CUTOFF = 25
+
+  # Any seq with more ambiguous bases than this will get the ambiguous
+  # bases flag
+  AMBIGUOUS_BASE_TOLERANCE = 0
 
   ###########
   # constants
@@ -143,11 +148,14 @@ module Const
   # seq flag bitmask
   ##################
 
-  FLAG_CHIMERA     = 0b10000
-  FLAG_OG_GTE_97   = 0b01000
-  FLAG_OG_LT_97    = 0b00100
-  FLAG_SINGLETON   = 0b00010
-  FLAG_FRAGMENT    = 0b00001
+  FLAG_CHIMERA         = 0b10000000
+  FLAG_OG_GTE_97       = 0b01000000
+  FLAG_OG_LT_97        = 0b00100000
+  FLAG_SINGLETON       = 0b00010000
+  FLAG_DOUBLETON       = 0b00001000
+  FLAG_LARGE_FRAGMENT  = 0b00000100
+  FLAG_SMALL_FRAGMENT  = 0b00000010
+  FLAG_AMBIGUOUS_BASES = 0b00000001
 
   # Holds the seq flags
   SEQ_FLAG = Hash.new 0
