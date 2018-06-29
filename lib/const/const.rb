@@ -1,4 +1,4 @@
-# Copyright 2016 - 2017 Ryan Moore
+# Copyright 2016 - 2018 Ryan Moore
 # Contact: moorer@udel.edu
 #
 # This file is part of ZetaHunter.
@@ -26,7 +26,7 @@ module Const
   # program info
   ##############
 
-  COPYRIGHT = "2016 - 2017 Ryan Moore"
+  COPYRIGHT = "2016 - 2018 Ryan Moore"
   CONTACT   = "moorer@udel.edu"
   WEBSITE   = "https://github.com/mooreryan/ZetaHunter"
   LICENSE   = "GPLv3"

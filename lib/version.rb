@@ -1,4 +1,4 @@
-# Copyright 2016 - 2017 Ryan Moore
+# Copyright 2016 - 2018 Ryan Moore
 # Contact: moorer@udel.edu
 #
 # This file is part of ZetaHunter.
@@ -17,5 +17,5 @@
 # along with ZetaHunter.  If not, see <http://www.gnu.org/licenses/>.
 
 module ZetaHunter
-  VERSION = "0.3.2"
+  VERSION = "1.0.0"
 end

@@ -1,4 +1,4 @@
-# Copyright 2016 - 2017 Ryan Moore
+# Copyright 2016 - 2018 Ryan Moore
 # Contact: moorer@udel.edu
 #
 # This file is part of ZetaHunter.

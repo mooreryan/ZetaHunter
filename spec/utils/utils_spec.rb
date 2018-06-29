@@ -1,4 +1,4 @@
-# Copyright 2016 - 2017 Ryan Moore
+# Copyright 2016 - 2018 Ryan Moore
 # Contact: moorer@udel.edu
 #
 # This file is part of ZetaHunter.
@@ -54,22 +54,24 @@ describe Utils do
   end
 
   describe "#gap?" do
-    context "the character is an A C T G U or N (case insensitive)" do
-      it "returns false" do
-        %w[a c t g u n A C T G U N].each do |char|
-          expect(klass.gap? char).to be false
-        end
+    it "gaps will be true" do
+      %w[- .].each do |char|
+        expect(klass.gap? char).to be true
       end
     end
 
-    context "the character is anything else" do
-      it "returns true" do
-        gap_chars =
-          (0..255).map { |n| n.chr } - %w[a c t g n u A C T G N U]
+    it "the regular DNA/RNA bases are false" do
+      %w[a c t g u n A C T G U N].each do |char|
+        expect(klass.gap? char).to be false
+      end
+    end
 
-        gap_chars.each do |n|
-          expect(klass.gap? n.chr).to be true
-        end
+    it "any ascii char other than - or . will be false" do
+      gap_chars =
+        (0..255).map { |n| n.chr } - %w[- .]
+
+      gap_chars.each do |n|
+        expect(klass.gap? n).to be false
       end
     end
   end
