@@ -11,7 +11,4 @@ RUN mv /home/ZetaHunter-1.0.1 /home/ZetaHunter
 
 RUN bundle install --gemfile /home/ZetaHunter/Gemfile
 
-# Copy in the correct version (temporary fix)
-COPY bin/linux/mothur /home/ZetaHunter/bin/linux/mothur
-
 CMD ["ruby", "/home/ZetaHunter/zeta_hunter.rb", "--help"]
