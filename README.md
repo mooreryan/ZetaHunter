@@ -1,5 +1,13 @@
 # ZetaHunter #
 
+## Citation
+
+If you find ZetaHunter useful in your research, please cite the [bioRxiv preprint](https://www.biorxiv.org/content/early/2018/07/03/359620):
+
+```
+McAllister, SM, RM Moore, and CS Chan. 2018. ZetaHunter: a reproducible taxonomic classification tool for tracking the ecology of the Zetaproteobacteria and other poorly-resolved taxa. bioRxiv 359620; doi: https://doi.org/10.1101/359620
+```
+
 ## Wiki ##
 
 Check the [Wiki](https://github.com/mooreryan/ZetaHunter/wiki) for
