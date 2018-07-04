@@ -55,11 +55,11 @@ module Utils
     end
 
     if FLAG_LARGE_FRAGMENT & flag != 0
-      str << "FRAGMENT_SMALL"
+      str << "FRAGMENT_LARGE"
     end
 
     if FLAG_SMALL_FRAGMENT & flag != 0
-      str << "FRAGMENT_LARGE"
+      str << "FRAGMENT_SMALL"
     end
 
     if FLAG_AMBIGUOUS_BASES & flag != 0
