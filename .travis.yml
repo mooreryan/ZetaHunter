@@ -1,4 +1,9 @@
+sudo: required
+
 language: ruby
+
+services:
+  - docker
 
 rvm:
   - 2.3
