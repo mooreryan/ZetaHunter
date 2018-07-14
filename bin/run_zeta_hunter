@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# VERSION: 1.0.5
+
 use File::Spec;
 
 my @args = ();
@@ -12,10 +14,18 @@ foreach my $arg (@ARGV) {
         # push the flag onto the arg list
         push @args, $arg;
 
-        # check if next arg should expand or not
-        if ($arg eq "-t" || $arg eq "--threads" ||
+        # check if next arg should expand or not (putting every non
+        # path arg in here, even switch types like --check-chimeras)
+        if (
+            $arg eq "-t" || $arg eq "--threads" ||
             $arg eq "-c" || $arg eq "--cluster-method" ||
-            $arg eq "-a" || $arg eq "--base") {
+            $arg eq "-u" || $arg eq "--otu-percent" ||
+            $arg eq "-k" || $arg eq "--check-chimeras" || $arg eq "--no-check-chimeras" ||
+            $arg eq "-a" || $arg eq "--base" ||
+            $arg eq "-e" || $arg eq "--debug" ||
+            $arg eq "-v" || $arg eq "--version" ||
+            $arg eq "-h" || $arg eq "--help"
+            ) {
 
             $expand = 0;
         } else {
