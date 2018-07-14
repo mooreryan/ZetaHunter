@@ -49,7 +49,11 @@ describe ZetaHunter do
       expect(File.read(File.absolute_path final_otu_calls)).to eq expected
 
       if Dir.exist? this_outdir
-        FileUtils.rm_r this_outdir
+        begin
+          FileUtils.rm_r this_outdir
+        rescue Errno::EACCES => e
+          STDERR.puts "Error: Could not erase '#{this_outdir}'.  Just going to leave it."
+        end
       end
     end
   end
@@ -62,7 +66,8 @@ describe ZetaHunter do
     }
     let(:snazzy_dir) { File.join RUN_ZH_TEST_DIR, "snazzy_test" }
     let(:outdir) { File.join snazzy_dir, "TEST_OUTPUT" }
-    let(:inaln) { File.join snazzy_dir, "*", "*" }
+    let(:inaln) { [File.join(snazzy_dir, "dir with spaces", "*"),
+                   File.join(snazzy_dir, "dir_without_spaces", "*")].join(" ") }
     let(:base) { "BASE" }
     # let(:final_otu_calls) { Dir.glob(File.join(RUN_ZH_OUTDIR, "otu_calls", "*.otu_calls.final.txt")).first }
 
