@@ -1,0 +1,10 @@
+language: ruby
+
+rvm:
+  - 2.3
+
+notifications:
+  email:
+    recipients:
+      - moorer@udel.edu
+    on_failure: always
