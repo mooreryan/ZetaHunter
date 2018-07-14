@@ -18,8 +18,95 @@
 
 require 'spec_helper'
 
+# This needs to be a relative path to test the path expansion of the
+# program.  The path is relative to the location you run the rspec
+# command.
+RUN_ZH_TEST_DIR = File.join "spec", "test_files", "run_zeta_hunter"
+
+RUN_ZETA_HUNTER = File.join Const::PROJ_DIR, "bin", "run_zeta_hunter"
+
+RUN_ZH_OUTDIR = File.join Const::PROJ_DIR, "spec", "test_files", "run_zeta_hunter", "snazzy_test", "TEST_OUTPUT"
+
+klass = Class.new { extend CoreExtensions::Process }
+
 describe ZetaHunter do
   it 'has a version number' do
     expect(ZetaHunter::VERSION).not_to be nil
+  end
+
+  shared_examples_for "test_the_options" do |outdir_addition, cmd_addition|
+    it "changing #{outdir_addition} option works" do
+      this_outdir = outdir + "_#{outdir_addition}"
+      final_otu_calls = File.join(this_outdir, "otu_calls", "#{base}.otu_calls.final.txt")
+
+      if Dir.exist? this_outdir
+        FileUtils.rm_r this_outdir
+      end
+
+      this_command = cmd + "--outdir #{this_outdir} " + cmd_addition
+
+      expect { klass.run_it!(this_command) }.not_to raise_error
+      expect(File.read(File.absolute_path final_otu_calls)).to eq expected
+
+      if Dir.exist? this_outdir
+        FileUtils.rm_r this_outdir
+      end
+    end
+  end
+
+  # Testing the run_zeta_hunter Docker script.
+  describe "run_zeta_hunter", speed: "slow" do
+    let(:cmd) { "#{RUN_ZETA_HUNTER} " \
+                "--base #{base} " \
+                "--inaln #{inaln} "
+    }
+    let(:snazzy_dir) { File.join RUN_ZH_TEST_DIR, "snazzy_test" }
+    let(:outdir) { File.join snazzy_dir, "TEST_OUTPUT" }
+    let(:inaln) { File.join snazzy_dir, "*", "*" }
+    let(:base) { "BASE" }
+    # let(:final_otu_calls) { Dir.glob(File.join(RUN_ZH_OUTDIR, "otu_calls", "*.otu_calls.final.txt")).first }
+
+    let(:expected) { File.read(File.join(RUN_ZH_TEST_DIR, "snazzy_test_final_otu_calls.txt")) }
+
+    before :each do
+      if Dir.exist? RUN_ZH_OUTDIR
+        FileUtils.rm_r RUN_ZH_OUTDIR
+      end
+    end
+
+    after :each do
+      if Dir.exist? RUN_ZH_OUTDIR
+        FileUtils.rm_r RUN_ZH_OUTDIR
+      end
+    end
+
+    include_examples "test_the_options", "mostly_defualt", ""
+    include_examples "test_the_options", "threads", "--threads 3"
+    include_examples "test_the_options", "otu_percent", "--otu-percent 97"
+    include_examples "test_the_options", "check_chimeras", "--check-chimeras"
+
+
+    # it "works mostly defualt options" do
+    #   this_outdir = outdir + "_mostly_defualt"
+    #   final_otu_calls = File.join(this_outdir, "otu_calls", "#{base}.otu_calls.final.txt")
+
+    #   if Dir.exist? this_outdir
+    #     FileUtils.rm_r this_outdir
+    #   end
+
+    #   cmd = "#{RUN_ZETA_HUNTER} " \
+    #         "--base #{base} " \
+    #         "--inaln #{inaln} " \
+    #         "--outdir #{this_outdir} "
+
+    #   expect { klass.run_it! cmd }.not_to raise_error
+    #   expect(File.read(File.absolute_path final_otu_calls)).to eq expected
+
+    #   if Dir.exist? this_outdir
+    #     FileUtils.rm_r this_outdir
+    #   end
+    # end
+
+
   end
 end
