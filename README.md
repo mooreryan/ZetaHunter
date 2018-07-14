@@ -1,4 +1,4 @@
-# ZetaHunter #
+# ZetaHunter
 
 ## Citation
 
@@ -8,12 +8,12 @@ If you find ZetaHunter useful in your research, please cite the [bioRxiv preprin
 McAllister, SM, RM Moore, and CS Chan. 2018. ZetaHunter: a reproducible taxonomic classification tool for tracking the ecology of the Zetaproteobacteria and other poorly-resolved taxa. bioRxiv 359620; doi: https://doi.org/10.1101/359620
 ```
 
-## Wiki ##
+## Wiki
 
-Check the [Wiki](https://github.com/mooreryan/ZetaHunter/wiki) for
-more info!
+Check the [ZetaHunter Wiki](https://github.com/mooreryan/ZetaHunter/wiki) for
+more info!  There you will find help on how to install and run ZetaHunter, as well as a lot more details about how ZetaHunter works.
 
-## Overview ##
+## Overview
 
 ZetaHunter is a command line script designed to assign user-supplied
 small subunit ribosomal RNA (SSU rRNA) gene sequences to OTUs defined
@@ -42,7 +42,7 @@ a self referential edge. Otherwise, only non-self connections are shown.
 ZetaHunter also supports user-provided curated OTU databases for
 sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 
-## Features ##
+## Features
 
 1. Stable SSU rRNA gene OTU binning to a curated database
 2. Supports import of multiple files for easy comparison of NewZetaOTUs across samples
@@ -51,132 +51,3 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
 7. Cytoscape-compatible output file for OTU network analysis
-
-## Running ZetaHunter with Docker ##
-
-If you don't have Docker, follow the instructions to install it here:
-[Mac](https://docs.docker.com/docker-for-mac/),
-[Linux](https://docs.docker.com/engine/installation/),
-[Windows](https://docs.docker.com/docker-for-windows/).
-
-*Note*: If you have Windows, running `ZetaHunter` with Docker is the
- only supported option.
-
-### Mac ###
-
-After installing Docker, open the Launchpad and click the `Docker`
-icon.
-
-Download
-[this](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter)
-perl script, and change the permissions to executable. In this case,
-it will be placed in the following directory `~/software/ZetaHunter`.
-
-    $ mkdir -p ~/software/ZetaHunter
-    $ \curl "https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/bin/run_zeta_hunter" > ~/software/ZetaHunter/run_zeta_hunter
-    $ chmod 755 ~/software/ZetaHunter/run_zeta_hunter
-
-You can create a symbolic link to somewhere on your path so that you
-can use the `run_zeta_hunter` command from any folder. Assuming that
-you have `/usr/local/bin` on your path, you can use this command.
-
-    $ sudo ln -s $HOME/software/ZetaHunter/run_zeta_hunter /usr/local/bin
-
-If you don't want to use a symbolic link, you can also move the program to your path directly.
-
-    $ sudo mv ~/software/ZetaHunter/run_zeta_hunter /usr/local/bin
-
-Try it out! Running this command
-
-    $ run_zeta_hunter -h
-
-will display the help banner.
-
-## Installing ##
-
-See `INSTALL.md`.
-
-## Zetaproteobacteria database curation ##
-
-Please cite
-
-    McAllister, S. M., R. E. Davis, J. M. McBeth, B. M. Tebo, D. Emerson, and C. L. Moyer. 2011. Biodiversity and emerging biogeography of the neutrophilic iron-oxidizing Zetaproteobacteria. Appl. Environ. Microbiol. 77:5445–5457. doi:10.1128/AEM.00533-11
-
-## Dependencies ##
-
-### External programs ###
-
-`ZetaHunter` uses lots of other software internally. Please cite the
-following.
-
-#### Arb SILVA ####
-
-[Arb SILVA](https://www.arb-silva.de)
-
-Please cite
-
-    Quast, C., E. Pruesse, P. Yilmaz, J. Gerken, T. Schweer, P. Yarza, J. Peplies, and F. O. Glöckner. 2013. The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41(D1): D590-D596.
-
-#### SINA Web-Aligner ####
-
-[SINA](https://www.arb-silva.de/aligner/)
-
-Please cite
-
-    Pruesse, E., J. Peplies, and F. O. Glöckner. 2012. SINA: accurate high-throughput multiple sequence alignment of ribosomal RNA genes. Bioinformatics 28:1823–1829.
-
-#### Mothur ####
-
-[Mothur](http://mothur.org/)
-
-Please cite
-
-    Schloss, P.D., et al., Introducing mothur: Open-source, platform-independent, community-supported software for describing and comparing microbial communities. Appl Environ Microbiol, 2009. 75(23):7537-41.
-
-#### SortMeRNA ####
-
-[SortMeRNA](http://bioinfo.lifl.fr/RNA/sortmerna/)
-
-Please cite
-
-    Kopylova E., Noé L. and Touzet H., "SortMeRNA: Fast and accurate filtering of ribosomal RNAs in metatranscriptomic data", Bioinformatics (2012), doi: 10.1093/bioinformatics/bts611.
-
-#### UCHIME ####
-
-[UCHIME](http://drive5.com/usearch/manual/uchime_algo.html)
-
-Please cite
-
-    Edgar, R. C., B. J. Haas, J. C. Clemente, C. Quince, and R. Knight. 2011. UCHIME improves sensitivity and speed of chimera detection. Bioinformatics, doi: 10.1093/bioinformatics/btr381
-
-### Gems ###
-
-See `Gemfile`
-
-## Assets ##
-
-`silva.gold.align.gz` is from
-http://www.mothur.org/wiki/Silva_reference_files
-
-**NOTE**: This file will be temporarily unzipped (requires 247mb of
-  hard drive space) if chimera checking is turned on.
-
-### OTU Metadata ###
-
-Lines beginning with `#` are considered comments.
-
-## Other info ##
-
-### Gap positions ###
-
-`base.match /[^ACTGUN]/i`
-
-### Sequence headers ###
-
-The headers are split on " " characters and the first part of that is
-taken to be the sequence ID and must be unique.
-
-### Entropy ###
-
-The entropy file needs to be rebuilt each time `db_seqs.fa` is
-updated.
