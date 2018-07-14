@@ -3,6 +3,9 @@ language: ruby
 rvm:
   - 2.3
 
+script:
+  "rspec"
+
 notifications:
   email:
     recipients:
