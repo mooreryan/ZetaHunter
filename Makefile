@@ -1,30 +1,40 @@
 TEST_OUT_D = TEST_OUTDIR
-TEST_FILE_D = test_files
-DIR_WITH_SPACES = $(TEST_FILE_D)/"dir with spaces"
-TEST_FILES = $(TEST_FILE_D)/"kitties say meow.fa" \
-             $(TEST_FILE_D)/"not a zeta.fa.gz" \
-             $(TEST_FILE_D)/"seqs.fa.gz" \
-             $(TEST_FILE_D)/"silly.fa" \
-             $(DIR_WITH_SPACES)/"apple.fa.gz" \
-             $(DIR_WITH_SPACES)/"fruit snacks.fa" \
-             $(DIR_WITH_SPACES)/"ginger_ale.fa" \
-             $(DIR_WITH_SPACES)/"pie is good.fa.gz" \
+TEST_FILE_D = ./spec/test_files/run_zeta_hunter/snazzy_test
 
-SNAZZY_D = $(TEST_FILE_D)/snazzy_test
+TEST_D1 = $(TEST_FILE_D)/"dir with spaces"
+TEST_D2 = $(TEST_FILE_D)/dir_without_spaces
 
-.PHONY: test
+EXPECTED_OTU_CALLS = $(TEST_FILE_D)/../snazzy_test_final_otu_calls.txt
+ACTUAL_OTU_CALLS = $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt
+
+ifeq ($(THREADS),)
+THREADS = 2
+endif
+
+
+.PHONY: test_all
+.PHONY: test_ruby
 .PHONY: test_docker
-.PHONY: test_snazzy
-.PHONY: profile_snazzy
+.PHONY: test_rspec
+.PHONY: rm_test_outdir
+.PHONY: pull_docker_image
 
-test:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(TEST_FILES) -o $(TEST_OUT_D) -t 4
+test_all: test_ruby test_docker test_rspec test_rspec_docker
 
-test_docker:
-	rm -r $(TEST_OUT_D); time bin/run_zeta_hunter -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test
+test_ruby: rm_test_outdir
+	time ruby zeta_hunter.rb -i $(TEST_D1)/* $(TEST_D2)/* -o $(TEST_OUT_D) -t $(THREADS) -a test && diff $(ACTUAL_OTU_CALLS) $(EXPECTED_OTU_CALLS)
 
-test_snazzy:
-	rm -r $(TEST_OUT_D); time ruby zeta_hunter.rb -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test
+test_docker: rm_test_outdir pull_docker_image
+	time bin/run_zeta_hunter -i $(TEST_D1)/* $(TEST_D2)/* -o $(TEST_OUT_D) -t $(THREADS) -a test && diff $(ACTUAL_OTU_CALLS) $(EXPECTED_OTU_CALLS)
 
-profile_snazzy:
-	rm -r $(TEST_OUT_D); time ruby-prof -p call_stack -f snazzy_profile.html zeta_hunter.rb -- -i $(SNAZZY_D)/*/* -o $(TEST_OUT_D) -t 4 -a test && diff $(TEST_OUT_D)/otu_calls/test.otu_calls.final.txt $(TEST_FILE_D)/snazzy_final_otu_calls.txt
+test_rspec: rm_test_outdir
+	bundle exec rspec
+
+test_rspec_docker: rm_test_outdir pull_docker_image
+	docker run --workdir /home/ZetaHunter mooreryan/zetahunter bundle exec rspec
+
+rm_test_outdir:
+	[ ! -e $(TEST_OUT_D) ] || rm -r $(TEST_OUT_D)
+
+pull_docker_image:
+	docker pull mooreryan/zetahunter

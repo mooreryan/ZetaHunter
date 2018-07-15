@@ -41,9 +41,7 @@ describe CoreExtensions::Dir do
     end
 
     it "raise AbortIf::Exit if SystemCallError is raised" do
-      # assumes that rspec is not run in sudo. I'm looking at you
-      # Docker....
-      dir = "/apple_pie_is_nice"
+      dir = "/apple_pie_is_nice/and_funny"
 
       expect { Dir.try_mkdir dir }.to raise_error AbortIf::Exit
     end
