@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with ZetaHunter.  If not, see <http://www.gnu.org/licenses/>.
 
-# This version should also get bumped if the run_zeta_hunter or
-# Dockerfiles change.
+# This version should also get bumped if run_zeta_hunter, Makefile, or
+# Dockerfile change (and perhaps others too).
 module ZetaHunter
-  VERSION = "1.0.5"
+  VERSION = "1.0.6"
 end
