@@ -43,7 +43,10 @@ describe ZetaHunter do
         FileUtils.rm_r this_outdir
       end
 
-      this_command = cmd + "--outdir #{this_outdir} " + cmd_addition
+      this_command = "#{RUN_ZETA_HUNTER} " \
+                     "--base #{base} " \
+                     "--inaln #{inaln} " \
+                     "--outdir #{this_outdir} " + cmd_addition
 
       expect { klass.run_it!(this_command) }.not_to raise_error
       expect(File.read(File.absolute_path final_otu_calls)).to eq expected
@@ -60,13 +63,9 @@ describe ZetaHunter do
 
   # Testing the run_zeta_hunter Docker script.
   describe "run_zeta_hunter", speed: "slow" do
-    let(:cmd) { "#{RUN_ZETA_HUNTER} " \
-                "--base #{base} " \
-                "--inaln #{inaln} "
-    }
     let(:snazzy_dir) { File.join RUN_ZH_TEST_DIR, "snazzy_test" }
     let(:outdir) { File.join snazzy_dir, "TEST_OUTPUT" }
-    let(:inaln) { [File.join(snazzy_dir, "dir with spaces", "*"),
+    let(:inaln) { [File.join(snazzy_dir, "'dir with spaces'", "*"),
                    File.join(snazzy_dir, "dir_without_spaces", "*")].join(" ") }
     let(:base) { "BASE" }
     # let(:final_otu_calls) { Dir.glob(File.join(RUN_ZH_OUTDIR, "otu_calls", "*.otu_calls.final.txt")).first }
