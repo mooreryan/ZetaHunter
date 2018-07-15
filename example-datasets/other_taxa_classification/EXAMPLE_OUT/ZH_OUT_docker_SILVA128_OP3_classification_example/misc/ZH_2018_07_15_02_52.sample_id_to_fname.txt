@@ -1,0 +1,2 @@
+#Sample	FileName
+S1	/tmp/d20180715_1_1mb1e92/tmp/all_OP3_SILVA128_aligned.fa.gz

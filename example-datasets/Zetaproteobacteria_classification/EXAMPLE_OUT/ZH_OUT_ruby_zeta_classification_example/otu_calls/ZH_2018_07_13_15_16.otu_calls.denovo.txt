@@ -1,0 +1,9 @@
+#SeqID	Sample	OTU	PercEntropy	PercMaskedBases	OTUComp
+KM042723	S5	NewZetaOtu1	65.8	62.7	[["USR", 1]]
+KM042725	S5	NewZetaOtu2	65.9	62.9	[["USR", 1]]
+KM042726	S5	NewZetaOtu3	65.7	63.5	[["USR", 1]]
+KM042729	S5	NewZetaOtu4	65.9	63.0	[["USR", 1]]
+KM042731	S5	NewZetaOtu5	65.7	62.7	[["USR", 1]]
+KM042734	S5	NewZetaOtu6	65.9	63.6	[["USR", 1]]
+KM042738	S5	NewZetaOtu7	65.9	63.6	[["USR", 1]]
+KM042741	S5	NewZetaOtu8	65.8	62.8	[["USR", 1]]

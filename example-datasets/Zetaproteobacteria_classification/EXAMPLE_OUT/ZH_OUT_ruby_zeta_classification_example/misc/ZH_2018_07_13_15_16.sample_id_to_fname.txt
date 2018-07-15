@@ -1,0 +1,7 @@
+#Sample	FileName
+S1	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AB133_aligned.fasta
+S2	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AB137_aligned.fasta
+S3	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AB602_aligned.fasta
+S4	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AB604_aligned.fasta
+S5	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AC673_aligned.fasta
+S6	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180713_41245_10o1oyl/tmp/sample_AC675_aligned.fasta
