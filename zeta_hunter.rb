@@ -72,7 +72,23 @@ opts = Trollop.options do
 
 #{VERSION_BANNER}
 
-  Hunt them Zetas!
+  For information on running ZetaHunter please visit the ZetaHunter
+  website (https://github.com/mooreryan/ZetaHunter).  There you will
+  find the ZetaHunter Wiki with lots of information on how to run
+  ZetaHunter, the command line options, and more
+  (https://github.com/mooreryan/ZetaHunter/wiki).
+
+  Also, we have repository with some example datasets and step-by-step
+  instructions on analyzing data with ZetaHunter
+  (https://github.com/mooreryan/ZetaHunter_examples).
+
+  The most common options for running ZetaHunter are these:
+
+    -i, --inaln (path to the input sequence alignments)
+    -o, --outdir (path where ZetaHunter will dump its output)
+    -t, --threads (number of processors to use)
+
+  In most cases, these three options will be all you need.
 
   Options:
   EOS

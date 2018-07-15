@@ -19,5 +19,5 @@
 # This version should also get bumped if run_zeta_hunter, Makefile, or
 # Dockerfile change (and perhaps others too).
 module ZetaHunter
-  VERSION = "1.0.7"
+  VERSION = "1.0.8"
 end
