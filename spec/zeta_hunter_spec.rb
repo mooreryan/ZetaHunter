@@ -54,6 +54,8 @@ describe ZetaHunter do
       if Dir.exist? this_outdir
         begin
           FileUtils.rm_r this_outdir
+        rescue Errno::ENOTEMPTY => e
+          STDERR.puts "Error: Could not erase '#{this_outdir}'.  Just going to leave it."
         rescue Errno::EACCES => e
           STDERR.puts "Error: Could not erase '#{this_outdir}'.  Just going to leave it."
         end
