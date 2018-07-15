@@ -17,7 +17,7 @@ more info!  There you will find help on how to install and run ZetaHunter, as we
 
 ## Example datasets
 
-Check out [ZetaHunter example datasets](https://github.com/mooreryan/ZetaHunter_examples) if you would like to check out some sample data and output from ZetaHunter.  There, you will also find a step by step guide to generating the expected output.
+Check out [ZetaHunter example datasets](https://github.com/mooreryan/ZetaHunter_examples) if you would like to check out some sample data and output from ZetaHunter.  There, you will also find a step by step guide to generating the expected output. You can also find the same sample input and curated database files [here](https://github.com/mooreryan/ZetaHunter/tree/master/example_data).
 
 ## Overview
 
