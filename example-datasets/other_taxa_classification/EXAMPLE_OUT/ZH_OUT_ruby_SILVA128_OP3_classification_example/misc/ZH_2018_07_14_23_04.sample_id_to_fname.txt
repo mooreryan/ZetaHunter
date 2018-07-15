@@ -1,0 +1,2 @@
+#Sample	FileName
+S1	/var/folders/jr/szwd2c6d0c15x8yj9x3l4jvr0000gn/T/d20180714_57112_1j4z3n/tmp/all_OP3_SILVA128_aligned.fa.gz

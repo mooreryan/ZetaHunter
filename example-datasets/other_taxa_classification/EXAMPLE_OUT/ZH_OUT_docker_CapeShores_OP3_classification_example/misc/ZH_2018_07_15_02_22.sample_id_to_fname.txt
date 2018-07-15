@@ -1,0 +1,2 @@
+#Sample	FileName
+S1	/tmp/d20180715_1_bp5j74/tmp/all_CapeShores_OP3_aligned.fa.gz

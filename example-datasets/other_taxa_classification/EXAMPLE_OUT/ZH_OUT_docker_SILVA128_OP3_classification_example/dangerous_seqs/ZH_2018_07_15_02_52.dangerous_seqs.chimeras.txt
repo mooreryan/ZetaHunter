@@ -1,0 +1,7 @@
+#SeqID	Sample	ChimeraChecker
+AF332344_1_600	S1	uchime
+GU642075_1_490	S1	uchime
+HE999195_1_874	S1	uchime
+HQ466197_1_416	S1	uchime
+HQ501994_1_476	S1	uchime
+KU041019_1_473	S1	uchime

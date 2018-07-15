@@ -1,0 +1,20 @@
+#OTU ID	S1	S2	S3	S4	S5	S6
+ZetaOtu14	4	5	1	0	1	0
+ZetaOtu8	1	0	0	0	0	0
+ZetaOtu6	1	6	1	0	0	0
+ZetaOtu2	37	53	36	6	0	4
+ZetaOtu1	10	2	2	0	9	0
+ZetaOtu7	0	0	1	0	0	0
+ZetaOtu4	0	0	0	16	7	12
+ZetaOtu10	0	0	0	2	4	3
+ZetaOtu19	0	0	0	0	1	0
+ZetaOtu3	0	0	0	0	1	0
+ZetaOtu13	0	0	0	0	0	1
+NewZetaOtu1	0	0	0	0	1	0
+NewZetaOtu2	0	0	0	0	1	0
+NewZetaOtu3	0	0	0	0	1	0
+NewZetaOtu4	0	0	0	0	1	0
+NewZetaOtu5	0	0	0	0	1	0
+NewZetaOtu6	0	0	0	0	1	0
+NewZetaOtu7	0	0	0	0	1	0
+NewZetaOtu8	0	0	0	0	1	0

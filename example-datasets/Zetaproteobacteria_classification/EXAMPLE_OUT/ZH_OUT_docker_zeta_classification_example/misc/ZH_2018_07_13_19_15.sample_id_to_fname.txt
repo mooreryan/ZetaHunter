@@ -1,0 +1,7 @@
+#Sample	FileName
+S1	/tmp/d20180713_1_15gzzo6/tmp/sample_AB133_aligned.fasta
+S2	/tmp/d20180713_1_15gzzo6/tmp/sample_AB137_aligned.fasta
+S3	/tmp/d20180713_1_15gzzo6/tmp/sample_AB602_aligned.fasta
+S4	/tmp/d20180713_1_15gzzo6/tmp/sample_AB604_aligned.fasta
+S5	/tmp/d20180713_1_15gzzo6/tmp/sample_AC673_aligned.fasta
+S6	/tmp/d20180713_1_15gzzo6/tmp/sample_AC675_aligned.fasta
