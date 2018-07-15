@@ -1,5 +1,7 @@
 # ZetaHunter
 
+[![Build Status](https://travis-ci.org/mooreryan/ZetaHunter.svg?branch=master)](https://travis-ci.org/mooreryan/ZetaHunter)
+
 ## Citation
 
 If you find ZetaHunter useful in your research, please cite the [bioRxiv preprint](https://www.biorxiv.org/content/early/2018/07/03/359620):

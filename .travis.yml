@@ -9,10 +9,11 @@ rvm:
   - 2.3
 
 script:
-  "rspec"
+  "make test_all"
 
 notifications:
   email:
     recipients:
       - moorer@udel.edu
+    on_success: change
     on_failure: always
