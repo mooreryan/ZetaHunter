@@ -57,3 +57,7 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 5. Chimera checking
 6. Flags for sequences not related to the curated database (i.e. not Zetaproteobacteria)
 7. Cytoscape-compatible output file for OTU network analysis
+
+## Help
+
+If you run into problems or need help with using ZetaHunter, please email us at: [zetahunter.help@gmail.com](mailto:zetahunter.help@gmail.com)
