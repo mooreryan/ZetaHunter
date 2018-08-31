@@ -27,7 +27,7 @@ Install [RVM](https://rvm.io/) (Ruby version manager)
 
     $ \curl -sSL https://get.rvm.io | bash -s stable
 
-    $ source /home/mooreryan/.rvm/scripts/rvm
+    $ source ~/.rvm/scripts/rvm
 
 Check the installation by typing
 
