@@ -1,0 +1,14 @@
+%0 Journal Article
+%A McAllister, Sean M.
+%A Moore, Ryan M.
+%A Chan, Clara S.
+%E Thrash, J. Cameron
+%T ZetaHunter, a Reproducible Taxonomic Classification Tool for Tracking the Ecology of the <em>Zetaproteobacteria</em> and Other Poorly Resolved Taxa
+%D 2018
+%R 10.1128/MRA.00932-18
+%J Microbiology Resource Announcements
+%V 7
+%N 7
+%X Like many taxa, the Zetaproteobacteria lack well-defined taxonomic divisions, making it difficult to compare them between studies. We designed ZetaHunter to reproducibly assign 16S rRNA gene sequences to previously described operational taxonomic units (OTUs) based on a curated database. While ZetaHunter can use any given database, we included a curated classification of publicly available Zetaproteobacteria.
+%U https://mra.asm.org/content/ga/7/7/e00932-18.full.pdf
+

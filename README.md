@@ -4,11 +4,17 @@
 
 ## Citation
 
-If you find ZetaHunter useful in your research, please cite the [bioRxiv preprint](https://www.biorxiv.org/content/early/2018/07/03/359620):
+If you find ZetaHunter useful in your research, please the [ZetaHunter manuscript](http://dx.doi.org/10.1128/MRA.00932-18).
 
 ```
-McAllister, SM, RM Moore, and CS Chan. 2018. ZetaHunter: a reproducible taxonomic classification tool for tracking the ecology of the Zetaproteobacteria and other poorly-resolved taxa. bioRxiv 359620; doi: https://doi.org/10.1101/359620
+McAllister, S. M., Moore, R. M., Chan, S. & Chan, C. S. ZetaHunter, a Reproducible Taxonomic Classification Tool for Tracking the Ecology of the Zetaproteobacteria and Other Poorly Resolved Taxa. Microbiol. Resour. Announc. 7, 1–3 (2018).
 ```
+
+Or you can download the citation and import it into your favorite reference manager!
+
+- [BibTeX](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/citation/zeta_hunter.bib)
+- [EndNote](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/citation/zeta_hunter.enw)
+- [RIS](https://raw.githubusercontent.com/mooreryan/ZetaHunter/master/citation/zeta_hunter.ris)
 
 ## Wiki
 
