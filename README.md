@@ -67,3 +67,7 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 ## Help
 
 If you run into problems or need help with using ZetaHunter, please email us at: [zetahunter.help@gmail.com](mailto:zetahunter.help@gmail.com)
+
+## Notes
+
+1. Updated trollop gem prints a deprecation warning at the front of the ZetaHunter output. This warning can be ignored.
