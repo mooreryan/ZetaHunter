@@ -1,0 +1,11 @@
+- Run make test_all command to see if it still passes
+- Bump the version number in the ZetaHunter program as well as the Dockerfile
+- Commit and merge all changes into master
+- Run the make test command one last time
+- Set a new tag
+- Push master and tags
+- Create a new stable branch with the new version and push that
+- Go back to master branch (and start a new work branch if you keep going)
+- Run the build_docker script (it will prompt for username and password)
+- Run make test_docker and make sure everything still works
+- Remove the old stable branch from github

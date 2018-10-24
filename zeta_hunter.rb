@@ -63,9 +63,9 @@ gunzip = Utils.which_gunzip
 
 argv_copy = ARGV.dup
 
-require "trollop"
+require "optimist"
 
-opts = Trollop.options do
+opts = Optimist.options do
   version VERSION_BANNER
 
   banner <<-EOS
@@ -156,17 +156,17 @@ CLUSTER_METHOD = opts[:cluster_method]
 BASE           = opts[:base]
 
 if opts[:otu_percent] < 0 || opts[:otu_percent] > 99
-  Trollop.die :otu_percent, "OTU similarity must be from 0 to 99"
+  Optimist.die :otu_percent, "OTU similarity must be from 0 to 99"
 end
 
 OTU_DIST = 100 - opts[:otu_percent]
 
 if opts[:inaln].nil?
-  Trollop.die :inaln, "Specify an input alignment"
+  Optimist.die :inaln, "Specify an input alignment"
 end
 
 if opts[:outdir].nil?
-  Trollop.die :outdir, "Specify an output directory"
+  Optimist.die :outdir, "Specify an output directory"
 end
 
 WORKING_D = Dir.mktmpdir

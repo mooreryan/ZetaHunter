@@ -18,7 +18,7 @@ endif
 .PHONY: test_rspec
 .PHONY: pull_docker_image
 
-test_all: test_ruby test_docker test_rspec test_rspec_docker
+test_all: test_ruby test_docker test_rspec
 
 test_ruby:
 	rm -r $(TEST_OUT_D).ruby; time ruby zeta_hunter.rb -i $(TEST_D1)/* $(TEST_D2)/* -o $(TEST_OUT_D).ruby -t $(THREADS) -a test && diff $(TEST_OUT_D).ruby/$(ACTUAL_OTU_CALLS) $(EXPECTED_OTU_CALLS)
@@ -29,8 +29,8 @@ test_docker: pull_docker_image
 test_rspec:
 	bundle exec rspec
 
-test_rspec_docker: pull_docker_image
-	docker run --workdir /home/ZetaHunter mooreryan/zetahunter bundle exec rspec
+# test_rspec_docker: pull_docker_image
+# 	docker run --workdir /home/ZetaHunter mooreryan/zetahunter bundle exec rspec
 
 pull_docker_image:
 	docker pull mooreryan/zetahunter
