@@ -4,10 +4,10 @@
 
 ## Citation
 
-If you find ZetaHunter useful in your research, please the [ZetaHunter manuscript](http://dx.doi.org/10.1128/MRA.00932-18).
+If you find ZetaHunter useful in your research, please cite the [ZetaHunter manuscript](http://dx.doi.org/10.1128/MRA.00932-18).
 
 ```
-McAllister, S. M., Moore, R. M., Chan, S. & Chan, C. S. ZetaHunter, a Reproducible Taxonomic Classification Tool for Tracking the Ecology of the Zetaproteobacteria and Other Poorly Resolved Taxa. Microbiol. Resour. Announc. 7, 1–3 (2018).
+McAllister, S. M., Moore, R. M., and Chan, C. S. ZetaHunter, a Reproducible Taxonomic Classification Tool for Tracking the Ecology of the Zetaproteobacteria and Other Poorly Resolved Taxa. Aug 2018, 7 (7) e00932-18; DOI: 10.1128/MRA.00932-18.
 ```
 
 Or you can download the citation and import it into your favorite reference manager!
@@ -67,3 +67,7 @@ sequence OTU binning of any SINA-aligned SSU rRNA sequences.
 ## Help
 
 If you run into problems or need help with using ZetaHunter, please email us at: [zetahunter.help@gmail.com](mailto:zetahunter.help@gmail.com)
+
+## Notes
+
+1. Updated trollop gem prints a deprecation warning at the front of the ZetaHunter output. This warning can be ignored.
